@@ -14,14 +14,13 @@
     --red: #e63946;
     --amber: #f4a026;
     --teal: #2ec4b6;
+    --green: #57cc99;
     --dim: #444;
     --muted: #666;
     --text: #d4d0c8;
     --text-bright: #f0ece0;
   }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -30,333 +29,224 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
-
   body::before {
     content: '';
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background-image:
       linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
     background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
+    pointer-events: none; z-index: 0;
   }
+  .container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 60px 24px 120px; }
 
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 60px 24px 120px;
-  }
-
+  /* HEADER */
   header { margin-bottom: 64px; display: flex; flex-direction: column; gap: 10px; }
-
   .eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.25em;
-    color: var(--red);
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.25em; color: var(--red); text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
   }
-  .eyebrow::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--red);
-    opacity: 0.3;
-    max-width: 120px;
-  }
-
-  h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(52px, 9vw, 96px);
-    letter-spacing: 0.04em;
-    line-height: 0.9;
-    color: var(--text-bright);
-  }
+  .eyebrow::after { content: ''; flex: 1; height: 1px; background: var(--red); opacity: 0.3; max-width: 120px; }
+  h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(52px, 9vw, 96px); letter-spacing: 0.04em; line-height: 0.9; color: var(--text-bright); }
   h1 span { color: var(--red); }
+  .subtitle { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 520px; margin-top: 8px; }
 
-  .subtitle {
-    font-size: 14px;
-    color: var(--muted);
-    line-height: 1.7;
-    max-width: 520px;
-    margin-top: 8px;
-  }
-
+  /* INPUT */
   .input-section { margin-bottom: 32px; }
-
   .input-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 12px;
   }
   .input-label::after { content: ''; flex: 1; height: 1px; background: var(--border-bright); }
-
   textarea {
-    width: 100%;
-    min-height: 180px;
-    background: var(--surface);
-    border: 1px solid var(--border-bright);
-    border-top: 2px solid var(--teal);
-    color: var(--text-bright);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 300;
-    line-height: 1.7;
-    padding: 20px 24px;
-    resize: vertical;
-    outline: none;
+    width: 100%; min-height: 180px;
+    background: var(--surface); border: 1px solid var(--border-bright); border-top: 2px solid var(--teal);
+    color: var(--text-bright); font-family: 'IBM Plex Sans', sans-serif; font-size: 15px;
+    font-weight: 300; line-height: 1.7; padding: 20px 24px; resize: vertical; outline: none;
     transition: border-color 0.2s;
   }
   textarea::placeholder { color: var(--dim); font-style: italic; }
   textarea:focus { border-color: var(--teal); }
-
-  .char-counter {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--dim);
-    text-align: right;
-    margin-top: 6px;
-    transition: color 0.2s;
-  }
+  .char-counter { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--dim); text-align: right; margin-top: 6px; }
   .char-counter.warn { color: var(--amber); }
   .char-counter.over { color: var(--red); }
 
-  .btn-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 16px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
+  .btn-row { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 12px; }
   .hint { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--dim); }
 
   .btn-analyze {
-    background: var(--red);
-    color: #fff;
-    border: none;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 18px;
-    letter-spacing: 0.12em;
-    padding: 14px 40px;
-    cursor: pointer;
+    background: var(--red); color: #fff; border: none;
+    font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+    letter-spacing: 0.12em; padding: 14px 40px; cursor: pointer;
     transition: background 0.15s, transform 0.1s;
   }
-  .btn-analyze:hover { background: #c1121f; }
-  .btn-analyze:active { transform: scale(0.98); }
+  .btn-analyze:hover:not(:disabled) { background: #c1121f; }
+  .btn-analyze:active:not(:disabled) { transform: scale(0.98); }
   .btn-analyze:disabled { background: var(--dim); cursor: not-allowed; }
 
-  .btn-text { display: block; }
-  .btn-loading { display: none; font-size: 13px; letter-spacing: 0.08em; }
-  .btn-analyze.loading .btn-text { display: none; }
-  .btn-analyze.loading .btn-loading { display: block; }
-
-  .error-box {
-    background: rgba(230,57,70,0.08);
-    border: 1px solid rgba(230,57,70,0.3);
-    border-left: 3px solid var(--red);
-    padding: 14px 20px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--red);
-    margin-bottom: 24px;
+  /* LOADING STATUS */
+  #loadingStatus {
     display: none;
-    line-height: 1.6;
+    margin-top: 32px;
+    border: 1px solid var(--border-bright);
+    border-left: 3px solid var(--teal);
+    background: var(--surface);
+    padding: 20px 24px;
+  }
+  #loadingStatus.active { display: block; }
+  .loading-title {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.2em; color: var(--teal); text-transform: uppercase; margin-bottom: 16px;
+  }
+  .loading-steps { display: flex; flex-direction: column; gap: 10px; }
+  .loading-step {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--dim);
+    transition: color 0.3s;
+  }
+  .loading-step.active { color: var(--text-bright); }
+  .loading-step.done { color: var(--teal); }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .loading-step.active .step-dot { background: var(--amber); animation: pulse 1s infinite; }
+  .loading-step.done .step-dot { background: var(--teal); animation: none; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ERROR */
+  .error-box {
+    background: rgba(230,57,70,0.08); border: 1px solid rgba(230,57,70,0.3);
+    border-left: 3px solid var(--red); padding: 14px 20px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--red);
+    margin-top: 24px; display: none; line-height: 1.6;
   }
 
+  /* RESULTS */
   #results { margin-top: 60px; }
-
   .results-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    margin-bottom: 40px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-bright);
-    flex-wrap: wrap;
-    gap: 12px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 32px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-bright); flex-wrap: wrap; gap: 12px;
   }
-
-  .results-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px;
-    letter-spacing: 0.06em;
-    color: var(--text-bright);
-  }
+  .results-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 0.06em; color: var(--text-bright); }
+  .results-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
   .verdict-badge {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    padding: 6px 14px;
-    border: 1px solid;
-    font-weight: 500;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase; padding: 6px 14px; border: 1px solid; font-weight: 500;
   }
   .verdict-high   { color: var(--red);   border-color: var(--red);   background: rgba(230,57,70,0.08); }
   .verdict-medium { color: var(--amber); border-color: var(--amber); background: rgba(244,160,38,0.08); }
-  .verdict-low    { color: var(--teal);  border-color: var(--teal);  background: rgba(46,196,182,0.08); }
+  .verdict-low    { color: var(--green); border-color: var(--green); background: rgba(87,204,153,0.08); }
 
-  .summary-strip {
-    background: var(--surface);
+  .btn-copy {
+    background: transparent; color: var(--muted);
     border: 1px solid var(--border-bright);
-    border-top: 2px solid var(--red);
-    padding: 24px 28px;
-    margin-bottom: 48px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 24px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 6px 14px; cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
   }
+  .btn-copy:hover { color: var(--teal); border-color: var(--teal); }
+  .btn-copy.copied { color: var(--teal); border-color: var(--teal); }
 
+  /* RISK METER */
+  .risk-meter-section {
+    background: var(--surface); border: 1px solid var(--border-bright);
+    border-top: 2px solid var(--red); padding: 24px 28px; margin-bottom: 40px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  @media(max-width:600px) { .risk-meter-section { grid-template-columns: 1fr; } }
+
+  .stat-col { display: flex; flex-direction: column; gap: 16px; }
+  .stats-row { display: flex; gap: 24px; flex-wrap: wrap; }
   .stat-item { display: flex; flex-direction: column; gap: 4px; }
-
-  .stat-val {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 40px;
-    line-height: 1;
-    color: var(--red);
-  }
+  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1; color: var(--red); }
   .stat-val.amber { color: var(--amber); }
   .stat-val.teal  { color: var(--teal); }
+  .stat-val.green { color: var(--green); }
+  .stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
 
-  .stat-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
+  .meter-col { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+  .meter-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; }
+  .meter-bar-wrap { background: var(--border); height: 8px; position: relative; }
+  .meter-bar { height: 100%; transition: width 1s ease; }
+  .meter-bar.high   { width: 100%; background: var(--red); }
+  .meter-bar.medium { width: 60%;  background: var(--amber); }
+  .meter-bar.low    { width: 25%;  background: var(--green); }
+  .meter-text { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; }
+  .meter-text.high   { color: var(--red); }
+  .meter-text.medium { color: var(--amber); }
+  .meter-text.low    { color: var(--green); }
 
-  .lens-section {
-    margin-bottom: 48px;
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-  }
+  .fatal-flaws { margin-top: 8px; }
+  .fatal-flaws-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .fatal-flaw-item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--red); letter-spacing: 0.04em; margin-bottom: 4px; }
+
+  /* LENS */
+  .lens-section { margin-bottom: 48px; opacity: 0; transform: translateY(16px); transition: opacity 0.4s ease, transform 0.4s ease; }
   .lens-section.visible { opacity: 1; transform: translateY(0); }
-
   .lens-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-
-  .lens-icon {
-    width: 36px; height: 36px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    border: 1px solid var(--border-bright);
-    flex-shrink: 0;
-  }
-
+  .lens-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid var(--border-bright); flex-shrink: 0; }
   .lens-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.08em; color: var(--text-bright); }
   .lens-role { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-top: 1px; }
 
-  .blind-spot {
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--red);
-    margin-bottom: 12px;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-  .blind-spot:hover { border-color: var(--border-bright); border-left-color: var(--red); }
+  /* BLIND SPOT CARD */
+  .blind-spot { border: 1px solid var(--border); border-left: 3px solid var(--red); margin-bottom: 12px; overflow: hidden; }
   .blind-spot.severity-medium { border-left-color: var(--amber); }
-  .blind-spot.severity-low    { border-left-color: var(--teal); }
+  .blind-spot.severity-low    { border-left-color: var(--green); }
 
-  .blind-spot-header {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 20px;
-    background: var(--surface);
-    cursor: pointer; user-select: none;
-  }
-
+  .blind-spot-header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; background: var(--surface); cursor: pointer; user-select: none; }
   .severity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
   .severity-medium .severity-dot { background: var(--amber); }
-  .severity-low    .severity-dot { background: var(--teal); }
+  .severity-low    .severity-dot { background: var(--green); }
 
   .blind-spot-title { flex: 1; font-size: 14px; font-weight: 500; color: var(--text-bright); letter-spacing: 0.02em; }
 
   .severity-tag {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
     color: var(--red); border: 1px solid rgba(230,57,70,0.3); padding: 3px 8px; white-space: nowrap;
   }
   .severity-medium .severity-tag { color: var(--amber); border-color: rgba(244,160,38,0.3); }
-  .severity-low    .severity-tag { color: var(--teal);  border-color: rgba(46,196,182,0.3); }
+  .severity-low    .severity-tag { color: var(--green); border-color: rgba(87,204,153,0.3); }
 
   .expand-icon { color: var(--muted); font-size: 12px; transition: transform 0.2s; flex-shrink: 0; }
   .blind-spot.open .expand-icon { transform: rotate(180deg); }
-
-  .blind-spot-body {
-    display: none;
-    padding: 0 20px 20px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-  }
+  .blind-spot-body { display: none; padding: 0 20px 20px; background: var(--surface); border-top: 1px solid var(--border); }
   .blind-spot.open .blind-spot-body { display: block; }
-
   .body-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin: 16px 0 6px; }
   .body-text { font-size: 14px; line-height: 1.75; color: var(--text); }
   .fix-text  { font-size: 14px; line-height: 1.75; color: var(--teal); font-style: italic; }
 
-  .verdict-section {
-    border: 1px solid var(--border-bright);
-    padding: 28px;
-    margin-top: 40px;
-    position: relative;
-  }
+  /* VERDICT */
+  .verdict-section { border: 1px solid var(--border-bright); padding: 28px; margin-top: 40px; position: relative; }
   .verdict-section::before {
-    content: 'FINAL VERDICT';
-    position: absolute; top: -1px; left: 28px;
-    background: var(--bg);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px; letter-spacing: 0.25em; color: var(--muted);
-    padding: 0 8px;
+    content: 'FINAL VERDICT'; position: absolute; top: -1px; left: 28px;
+    background: var(--bg); font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing: 0.25em; color: var(--muted); padding: 0 8px;
   }
   .verdict-text { font-size: 15px; line-height: 1.8; color: var(--text); margin-top: 8px; }
+  .model-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--dim); margin-top: 16px; }
 
   .btn-reset {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border-bright);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
-    padding: 10px 20px;
-    cursor: pointer;
-    margin-top: 40px;
-    transition: color 0.2s, border-color 0.2s;
+    background: transparent; color: var(--muted); border: 1px solid var(--border-bright);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 10px 20px; cursor: pointer; margin-top: 32px; transition: color 0.2s, border-color 0.2s;
   }
   .btn-reset:hover { color: var(--text); border-color: var(--text); }
 
-  .skeleton {
-    background: linear-gradient(90deg, var(--surface) 25%, var(--border-bright) 50%, var(--surface) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
-    border-radius: 2px;
-    height: 14px;
-    margin-bottom: 10px;
-  }
+  /* SKELETON */
+  .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--border-bright) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 2px; height: 14px; margin-bottom: 10px; }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-  .loading-section { border: 1px solid var(--border); padding: 24px; margin-bottom: 16px; }
 
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border-bright); }
 
-  @media (max-width: 600px) {
-    .container { padding: 40px 16px 80px; }
-    .btn-analyze { width: 100%; }
-  }
+  @media(max-width:600px) { .container { padding: 40px 16px 80px; } .btn-analyze { width: 100%; } }
 </style>
 </head>
 <body>
@@ -365,29 +255,31 @@
   <header>
     <div class="eyebrow">Single Agent Architecture</div>
     <h1>BLIND<br/>SPOT<br/><span>DETECTOR</span></h1>
-    <p class="subtitle">
-      Submit your idea, plan, or decision. Four expert lenses — a skeptical investor,
-      a devil's advocate, a forensic psychologist, and a corporate lawyer — will
-      systematically dismantle it and surface every hidden flaw you missed.
-    </p>
+    <p class="subtitle">Submit your idea, plan, or decision. Four expert lenses will systematically dismantle it and surface every hidden flaw you missed.</p>
   </header>
 
   <div class="input-section">
     <div class="input-label">Your Idea / Plan / Decision</div>
-    <textarea
-      id="ideaInput"
-      maxlength="5000"
-      placeholder="Describe your business idea, life decision, strategy, or plan in as much detail as you want. The more context, the sharper the analysis...
+    <textarea id="ideaInput" maxlength="5000"
+      placeholder="Describe your business idea, life decision, strategy, or plan in as much detail as possible...
 
-e.g. &quot;I want to quit my job and start a SaaS product for freelancers that helps them track client payments. I already have 3 friends who said they'd pay for it. I plan to build it in 3 months while living off savings.&quot;"
-    ></textarea>
+e.g. &quot;I want to quit my job and start a SaaS product for freelancers that helps them track client payments. I have 3 friends who said they'd pay for it. Plan to build it in 3 months while living off savings.&quot;"></textarea>
     <div class="char-counter" id="charCounter">0 / 5000</div>
     <div class="btn-row">
       <span class="hint">// Ctrl + Enter to analyze</span>
-      <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">
-        <span class="btn-text">DETECT BLIND SPOTS</span>
-        <span class="btn-loading">ANALYZING ...</span>
-      </button>
+      <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">DETECT BLIND SPOTS</button>
+    </div>
+  </div>
+
+  <!-- LOADING STATUS -->
+  <div id="loadingStatus">
+    <div class="loading-title">// Analysis in progress</div>
+    <div class="loading-steps">
+      <div class="loading-step" id="step-0"><div class="step-dot"></div>💰 Skeptical Investor analyzing financials...</div>
+      <div class="loading-step" id="step-1"><div class="step-dot"></div>👿 Devil's Advocate attacking assumptions...</div>
+      <div class="loading-step" id="step-2"><div class="step-dot"></div>🧠 Psychologist detecting cognitive biases...</div>
+      <div class="loading-step" id="step-3"><div class="step-dot"></div>⚖️ Lawyer reviewing legal exposure...</div>
+      <div class="loading-step" id="step-4"><div class="step-dot"></div>📋 Compiling case file...</div>
     </div>
   </div>
 
@@ -403,12 +295,46 @@ const LENSES = [
   { id: 'lawyer',          icon: '⚖️', name: 'Corporate Lawyer',      role: 'Risk, Liability & Edge Cases' }
 ];
 
-document.getElementById('ideaInput').addEventListener('input', function () {
+// Character counter
+document.getElementById('ideaInput').addEventListener('input', function() {
   const len = this.value.length;
   const c = document.getElementById('charCounter');
   c.textContent = `${len} / 5000`;
   c.className = 'char-counter' + (len > 4500 ? ' over' : len > 3500 ? ' warn' : '');
 });
+
+// Ctrl+Enter
+document.getElementById('ideaInput').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runAnalysis();
+});
+
+// Animated loading steps
+let stepInterval = null;
+function startLoadingSteps() {
+  document.getElementById('loadingStatus').classList.add('active');
+  let current = 0;
+  // Activate first step immediately
+  document.getElementById(`step-0`).classList.add('active');
+
+  stepInterval = setInterval(() => {
+    if (current < 4) {
+      document.getElementById(`step-${current}`).classList.remove('active');
+      document.getElementById(`step-${current}`).classList.add('done');
+      current++;
+      if (current < 5) document.getElementById(`step-${current}`).classList.add('active');
+    }
+  }, 2200);
+}
+
+function stopLoadingSteps() {
+  clearInterval(stepInterval);
+  document.getElementById('loadingStatus').classList.remove('active');
+  // Reset steps
+  for (let i = 0; i < 5; i++) {
+    const s = document.getElementById(`step-${i}`);
+    s.classList.remove('active', 'done');
+  }
+}
 
 async function runAnalysis() {
   const idea = document.getElementById('ideaInput').value.trim();
@@ -418,9 +344,11 @@ async function runAnalysis() {
   errBox.style.display = 'none';
   if (!idea || idea.length < 20) { showError('Please describe your idea in more detail.'); return; }
 
-  btn.classList.add('loading');
   btn.disabled = true;
-  document.getElementById('results').innerHTML = buildSkeleton();
+  btn.textContent = 'ANALYZING...';
+  document.getElementById('results').innerHTML = '';
+
+  startLoadingSteps();
 
   try {
     const res = await fetch('/api/analyze', {
@@ -431,14 +359,16 @@ async function runAnalysis() {
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    stopLoadingSteps();
     renderResults(data);
 
   } catch (err) {
+    stopLoadingSteps();
     document.getElementById('results').innerHTML = '';
     showError(err.message || 'Something went wrong. Please try again.');
   } finally {
-    btn.classList.remove('loading');
     btn.disabled = false;
+    btn.textContent = 'DETECT BLIND SPOTS';
   }
 }
 
@@ -448,51 +378,60 @@ function showError(msg) {
   b.style.display = 'block';
 }
 
-function buildSkeleton() {
-  return [1,2,3,4].map(() => `
-    <div class="loading-section">
-      <div class="skeleton" style="width:40%;height:12px;"></div>
-      <div class="skeleton" style="width:70%;height:20px;margin-top:12px;"></div>
-      <div class="skeleton" style="width:90%;"></div>
-      <div class="skeleton" style="width:80%;"></div>
-      <div class="skeleton" style="width:55%;"></div>
-    </div>`).join('');
-}
-
 function renderResults(data) {
   const allSpots = LENSES.flatMap(l => data[l.id] || []);
   const counts = { high: 0, medium: 0, low: 0 };
   allSpots.forEach(s => counts[s.severity] = (counts[s.severity] || 0) + 1);
-  const rClass = `verdict-${data.risk_level || 'medium'}`;
+  const risk = data.risk_level || 'medium';
 
   let html = `
     <div class="results-header">
       <div class="results-title">CASE FILE OPENED</div>
-      <div class="verdict-badge ${rClass}">${(data.risk_level||'unknown').toUpperCase()} RISK</div>
+      <div class="results-actions">
+        <div class="verdict-badge verdict-${risk}">${risk.toUpperCase()} RISK</div>
+        <button class="btn-copy" id="copyBtn" onclick="copyReport()">📋 COPY REPORT</button>
+      </div>
     </div>
-    <div class="summary-strip">
-      <div class="stat-item"><div class="stat-val">${allSpots.length}</div><div class="stat-label">Total Blind Spots</div></div>
-      <div class="stat-item"><div class="stat-val">${counts.high||0}</div><div class="stat-label">Critical</div></div>
-      <div class="stat-item"><div class="stat-val amber">${counts.medium||0}</div><div class="stat-label">Moderate</div></div>
-      <div class="stat-item"><div class="stat-val teal">${counts.low||0}</div><div class="stat-label">Minor</div></div>
-      ${data.fatal_flaws?.length ? `
-      <div class="stat-item" style="grid-column:span 2">
-        <div class="stat-label" style="margin-bottom:8px;">Fatal Flaws</div>
-        ${data.fatal_flaws.map(f=>`<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);letter-spacing:0.04em;margin-bottom:4px;">→ ${esc(f)}</div>`).join('')}
-      </div>` : ''}
+
+    <div class="risk-meter-section">
+      <div class="stat-col">
+        <div class="stats-row">
+          <div class="stat-item"><div class="stat-val">${allSpots.length}</div><div class="stat-label">Total Blind Spots</div></div>
+          <div class="stat-item"><div class="stat-val">${counts.high||0}</div><div class="stat-label">🔴 Critical</div></div>
+          <div class="stat-item"><div class="stat-val amber">${counts.medium||0}</div><div class="stat-label">🟠 Moderate</div></div>
+          <div class="stat-item"><div class="stat-val green">${counts.low||0}</div><div class="stat-label">🟢 Minor</div></div>
+        </div>
+        ${data.fatal_flaws?.length ? `
+        <div class="fatal-flaws">
+          <div class="fatal-flaws-label">Fatal Flaws</div>
+          ${data.fatal_flaws.map(f => `<div class="fatal-flaw-item">→ ${esc(f)}</div>`).join('')}
+        </div>` : ''}
+      </div>
+      <div class="meter-col">
+        <div class="meter-label">Overall Risk Level</div>
+        <div class="meter-text ${risk}">${risk.toUpperCase()}</div>
+        <div class="meter-bar-wrap">
+          <div class="meter-bar ${risk}" id="meterBar" style="width:0%"></div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:6px;">
+          ${risk === 'high' ? 'Significant risks detected. Address before proceeding.' :
+            risk === 'medium' ? 'Moderate risks. Fixable with the right approach.' :
+            'Low risk profile. Proceed with awareness.'}
+        </div>
+      </div>
     </div>`;
 
   LENSES.forEach((lens, idx) => {
     const spots = data[lens.id] || [];
-    const sClass = s => s==='medium'?'severity-medium':s==='low'?'severity-low':'';
-    const sLabel = s => s==='high'?'CRITICAL':s==='medium'?'MODERATE':'MINOR';
+    const sClass = s => s === 'medium' ? 'severity-medium' : s === 'low' ? 'severity-low' : '';
+    const sLabel = s => s === 'high' ? '🔴 CRITICAL' : s === 'medium' ? '🟠 MODERATE' : '🟢 MINOR';
     html += `
       <div class="lens-section" id="lens-${idx}">
         <div class="lens-header">
           <div class="lens-icon">${lens.icon}</div>
           <div><div class="lens-name">${lens.name}</div><div class="lens-role">${lens.role}</div></div>
         </div>
-        ${spots.map((spot,si)=>`
+        ${spots.map((spot, si) => `
           <div class="blind-spot ${sClass(spot.severity)}" id="sp-${idx}-${si}">
             <div class="blind-spot-header" onclick="tog('sp-${idx}-${si}')">
               <div class="severity-dot"></div>
@@ -512,32 +451,76 @@ function renderResults(data) {
 
   html += `
     <div class="verdict-section">
-      <div class="verdict-text">${esc(data.overall_verdict||'')}</div>
+      <div class="verdict-text">${esc(data.overall_verdict || '')}</div>
+      ${data._model ? `<div class="model-tag">// analyzed by ${data._model}</div>` : ''}
     </div>
-    <button class="btn-reset" onclick="reset()">← ANALYZE ANOTHER IDEA</button>`;
+    <button class="btn-reset" onclick="resetForm()">← ANALYZE ANOTHER IDEA</button>`;
 
   document.getElementById('results').innerHTML = html;
-  LENSES.forEach((_,i) => setTimeout(()=>document.getElementById(`lens-${i}`)?.classList.add('visible'), 100+i*150));
+
+  // Animate risk meter bar
+  setTimeout(() => {
+    const bar = document.getElementById('meterBar');
+    if (bar) bar.style.width = risk === 'high' ? '100%' : risk === 'medium' ? '60%' : '25%';
+  }, 100);
+
+  // Stagger lens fade-in
+  LENSES.forEach((_, i) => {
+    setTimeout(() => document.getElementById(`lens-${i}`)?.classList.add('visible'), 100 + i * 150);
+  });
+
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Store data for copy
+  window._lastReport = data;
 }
 
 function tog(id) { document.getElementById(id)?.classList.toggle('open'); }
 
-function reset() {
+function copyReport() {
+  if (!window._lastReport) return;
+  const report = buildTextReport(window._lastReport);
+  navigator.clipboard.writeText(report).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 COPY REPORT'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    showError('Could not copy to clipboard. Try manually selecting the text.');
+  });
+}
+
+function buildTextReport(data) {
+  const lines = ['BLIND SPOT DETECTOR — ANALYSIS REPORT', '='.repeat(50), ''];
+  lines.push(`OVERALL RISK: ${(data.risk_level || '').toUpperCase()}`);
+  lines.push(`FATAL FLAWS: ${(data.fatal_flaws || []).join(', ') || 'None identified'}`);
+  lines.push('');
+  LENSES.forEach(lens => {
+    lines.push(`--- ${lens.name.toUpperCase()} ---`);
+    (data[lens.id] || []).forEach((s, i) => {
+      lines.push(`${i+1}. [${s.severity.toUpperCase()}] ${s.title}`);
+      lines.push(`   ${s.explanation}`);
+      lines.push(`   FIX: ${s.fix}`);
+      lines.push('');
+    });
+  });
+  lines.push('--- FINAL VERDICT ---');
+  lines.push(data.overall_verdict || '');
+  return lines.join('\n');
+}
+
+function resetForm() {
   document.getElementById('results').innerHTML = '';
   document.getElementById('ideaInput').value = '';
   document.getElementById('charCounter').textContent = '0 / 5000';
   document.getElementById('errorBox').style.display = 'none';
+  window._lastReport = null;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function esc(s) {
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-
-document.getElementById('ideaInput').addEventListener('keydown', e => {
-  if ((e.ctrlKey||e.metaKey) && e.key==='Enter') runAnalysis();
-});
 </script>
 </body>
 </html>
