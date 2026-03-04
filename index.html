@@ -31,7 +31,6 @@
     overflow-x: hidden;
   }
 
-  /* Subtle grid texture */
   body::before {
     content: '';
     position: fixed;
@@ -52,13 +51,7 @@
     padding: 60px 24px 120px;
   }
 
-  /* ── HEADER ── */
-  header {
-    margin-bottom: 64px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  header { margin-bottom: 64px; display: flex; flex-direction: column; gap: 10px; }
 
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace;
@@ -96,45 +89,6 @@
     margin-top: 8px;
   }
 
-  /* ── API KEY INPUT ── */
-  .api-section {
-    background: var(--surface);
-    border: 1px solid var(--border-bright);
-    border-left: 3px solid var(--amber);
-    padding: 20px 24px;
-    margin-bottom: 32px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .api-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: var(--amber);
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .api-input {
-    flex: 1;
-    min-width: 200px;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--border-bright);
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    padding: 6px 0;
-    outline: none;
-    letter-spacing: 0.05em;
-  }
-  .api-input::placeholder { color: var(--dim); }
-  .api-input:focus { border-bottom-color: var(--amber); }
-
-  /* ── INPUT AREA ── */
   .input-section { margin-bottom: 32px; }
 
   .input-label {
@@ -148,12 +102,7 @@
     align-items: center;
     gap: 12px;
   }
-  .input-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border-bright);
-  }
+  .input-label::after { content: ''; flex: 1; height: 1px; background: var(--border-bright); }
 
   textarea {
     width: 100%;
@@ -174,7 +123,17 @@
   textarea::placeholder { color: var(--dim); font-style: italic; }
   textarea:focus { border-color: var(--teal); }
 
-  /* ── ANALYZE BUTTON ── */
+  .char-counter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    text-align: right;
+    margin-top: 6px;
+    transition: color 0.2s;
+  }
+  .char-counter.warn { color: var(--amber); }
+  .char-counter.over { color: var(--red); }
+
   .btn-row {
     display: flex;
     align-items: center;
@@ -184,11 +143,7 @@
     gap: 12px;
   }
 
-  .hint {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--dim);
-  }
+  .hint { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--dim); }
 
   .btn-analyze {
     background: var(--red);
@@ -200,24 +155,16 @@
     padding: 14px 40px;
     cursor: pointer;
     transition: background 0.15s, transform 0.1s;
-    position: relative;
-    overflow: hidden;
   }
   .btn-analyze:hover { background: #c1121f; }
   .btn-analyze:active { transform: scale(0.98); }
   .btn-analyze:disabled { background: var(--dim); cursor: not-allowed; }
-  .btn-analyze.loading { pointer-events: none; }
 
-  .btn-analyze .btn-text { display: block; }
-  .btn-analyze .btn-loading {
-    display: none;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-  }
+  .btn-text { display: block; }
+  .btn-loading { display: none; font-size: 13px; letter-spacing: 0.08em; }
   .btn-analyze.loading .btn-text { display: none; }
   .btn-analyze.loading .btn-loading { display: block; }
 
-  /* ── ERROR ── */
   .error-box {
     background: rgba(230,57,70,0.08);
     border: 1px solid rgba(230,57,70,0.3);
@@ -228,9 +175,9 @@
     color: var(--red);
     margin-bottom: 24px;
     display: none;
+    line-height: 1.6;
   }
 
-  /* ── RESULTS ── */
   #results { margin-top: 60px; }
 
   .results-header {
@@ -260,148 +207,10 @@
     border: 1px solid;
     font-weight: 500;
   }
-  .verdict-high { color: var(--red); border-color: var(--red); background: rgba(230,57,70,0.08); }
+  .verdict-high   { color: var(--red);   border-color: var(--red);   background: rgba(230,57,70,0.08); }
   .verdict-medium { color: var(--amber); border-color: var(--amber); background: rgba(244,160,38,0.08); }
-  .verdict-low { color: var(--teal); border-color: var(--teal); background: rgba(46,196,182,0.08); }
+  .verdict-low    { color: var(--teal);  border-color: var(--teal);  background: rgba(46,196,182,0.08); }
 
-  /* ── SECTION ── */
-  .lens-section {
-    margin-bottom: 48px;
-    opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-  }
-  .lens-section.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .lens-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-
-  .lens-icon {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    border: 1px solid var(--border-bright);
-    flex-shrink: 0;
-  }
-
-  .lens-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 0.08em;
-    color: var(--text-bright);
-  }
-
-  .lens-role {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-top: 1px;
-  }
-
-  /* ── BLIND SPOT CARD ── */
-  .blind-spot {
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--red);
-    margin-bottom: 12px;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-  .blind-spot:hover { border-color: var(--border-bright); border-left-color: var(--red); }
-  .blind-spot.severity-medium { border-left-color: var(--amber); }
-  .blind-spot.severity-low { border-left-color: var(--teal); }
-
-  .blind-spot-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 20px;
-    background: var(--surface);
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .severity-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--red);
-    flex-shrink: 0;
-  }
-  .severity-medium .severity-dot { background: var(--amber); }
-  .severity-low .severity-dot { background: var(--teal); }
-
-  .blind-spot-title {
-    flex: 1;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-bright);
-    letter-spacing: 0.02em;
-  }
-
-  .severity-tag {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--red);
-    border: 1px solid rgba(230,57,70,0.3);
-    padding: 3px 8px;
-    white-space: nowrap;
-  }
-  .severity-medium .severity-tag { color: var(--amber); border-color: rgba(244,160,38,0.3); }
-  .severity-low .severity-tag { color: var(--teal); border-color: rgba(46,196,182,0.3); }
-
-  .expand-icon {
-    color: var(--muted);
-    font-size: 12px;
-    transition: transform 0.2s;
-    flex-shrink: 0;
-  }
-  .blind-spot.open .expand-icon { transform: rotate(180deg); }
-
-  .blind-spot-body {
-    display: none;
-    padding: 0 20px 20px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-  }
-  .blind-spot.open .blind-spot-body { display: block; }
-
-  .body-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin: 16px 0 6px;
-  }
-
-  .body-text {
-    font-size: 14px;
-    line-height: 1.75;
-    color: var(--text);
-  }
-
-  .fix-text {
-    font-size: 14px;
-    line-height: 1.75;
-    color: var(--teal);
-    font-style: italic;
-  }
-
-  /* ── SUMMARY STRIP ── */
   .summary-strip {
     background: var(--surface);
     border: 1px solid var(--border-bright);
@@ -422,7 +231,7 @@
     color: var(--red);
   }
   .stat-val.amber { color: var(--amber); }
-  .stat-val.teal { color: var(--teal); }
+  .stat-val.teal  { color: var(--teal); }
 
   .stat-label {
     font-family: 'IBM Plex Mono', monospace;
@@ -432,40 +241,103 @@
     text-transform: uppercase;
   }
 
-  /* ── OVERALL VERDICT ── */
+  .lens-section {
+    margin-bottom: 48px;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .lens-section.visible { opacity: 1; transform: translateY(0); }
+
+  .lens-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+
+  .lens-icon {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    border: 1px solid var(--border-bright);
+    flex-shrink: 0;
+  }
+
+  .lens-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.08em; color: var(--text-bright); }
+  .lens-role { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-top: 1px; }
+
+  .blind-spot {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .blind-spot:hover { border-color: var(--border-bright); border-left-color: var(--red); }
+  .blind-spot.severity-medium { border-left-color: var(--amber); }
+  .blind-spot.severity-low    { border-left-color: var(--teal); }
+
+  .blind-spot-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px;
+    background: var(--surface);
+    cursor: pointer; user-select: none;
+  }
+
+  .severity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+  .severity-medium .severity-dot { background: var(--amber); }
+  .severity-low    .severity-dot { background: var(--teal); }
+
+  .blind-spot-title { flex: 1; font-size: 14px; font-weight: 500; color: var(--text-bright); letter-spacing: 0.02em; }
+
+  .severity-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--red); border: 1px solid rgba(230,57,70,0.3); padding: 3px 8px; white-space: nowrap;
+  }
+  .severity-medium .severity-tag { color: var(--amber); border-color: rgba(244,160,38,0.3); }
+  .severity-low    .severity-tag { color: var(--teal);  border-color: rgba(46,196,182,0.3); }
+
+  .expand-icon { color: var(--muted); font-size: 12px; transition: transform 0.2s; flex-shrink: 0; }
+  .blind-spot.open .expand-icon { transform: rotate(180deg); }
+
+  .blind-spot-body {
+    display: none;
+    padding: 0 20px 20px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .blind-spot.open .blind-spot-body { display: block; }
+
+  .body-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin: 16px 0 6px; }
+  .body-text { font-size: 14px; line-height: 1.75; color: var(--text); }
+  .fix-text  { font-size: 14px; line-height: 1.75; color: var(--teal); font-style: italic; }
+
   .verdict-section {
     border: 1px solid var(--border-bright);
     padding: 28px;
     margin-top: 40px;
     position: relative;
-    overflow: hidden;
   }
   .verdict-section::before {
     content: 'FINAL VERDICT';
-    position: absolute;
-    top: -1px;
-    left: 28px;
+    position: absolute; top: -1px; left: 28px;
     background: var(--bg);
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    color: var(--muted);
+    font-size: 10px; letter-spacing: 0.25em; color: var(--muted);
     padding: 0 8px;
   }
+  .verdict-text { font-size: 15px; line-height: 1.8; color: var(--text); margin-top: 8px; }
 
-  .verdict-text {
-    font-size: 15px;
-    line-height: 1.8;
-    color: var(--text);
-    margin-top: 8px;
+  .btn-reset {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border-bright);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 40px;
+    transition: color 0.2s, border-color 0.2s;
   }
+  .btn-reset:hover { color: var(--text); border-color: var(--text); }
 
-  /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border-bright); }
-
-  /* ── SKELETON LOADER ── */
   .skeleton {
     background: linear-gradient(90deg, var(--surface) 25%, var(--border-bright) 50%, var(--surface) 75%);
     background-size: 200% 100%;
@@ -475,12 +347,11 @@
     margin-bottom: 10px;
   }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .loading-section { border: 1px solid var(--border); padding: 24px; margin-bottom: 16px; }
 
-  .loading-section {
-    border: 1px solid var(--border);
-    padding: 24px;
-    margin-bottom: 16px;
-  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); }
 
   @media (max-width: 600px) {
     .container { padding: 40px 16px 80px; }
@@ -491,180 +362,79 @@
 <body>
 <div class="container">
 
-  <!-- HEADER -->
   <header>
-    <div class="eyebrow">Cognitive Analysis Engine</div>
+    <div class="eyebrow">Single Agent Architecture</div>
     <h1>BLIND<br/>SPOT<br/><span>DETECTOR</span></h1>
     <p class="subtitle">
       Submit your idea, plan, or decision. Four expert lenses — a skeptical investor,
       a devil's advocate, a forensic psychologist, and a corporate lawyer — will
-      systematically tear it apart to reveal every hidden flaw and assumption you missed.
+      systematically dismantle it and surface every hidden flaw you missed.
     </p>
   </header>
 
-  <!-- API KEY -->
-  <div class="api-section">
-    <span class="api-label">Gemini API Key</span>
-    <input
-      type="password"
-      id="apiKey"
-      class="api-input"
-      placeholder="AIza..."
-      autocomplete="off"
-      spellcheck="false"
-    />
-  </div>
-
-  <!-- INPUT -->
   <div class="input-section">
     <div class="input-label">Your Idea / Plan / Decision</div>
     <textarea
       id="ideaInput"
+      maxlength="5000"
       placeholder="Describe your business idea, life decision, strategy, or plan in as much detail as you want. The more context, the sharper the analysis...
 
 e.g. &quot;I want to quit my job and start a SaaS product for freelancers that helps them track client payments. I already have 3 friends who said they'd pay for it. I plan to build it in 3 months while living off savings.&quot;"
     ></textarea>
+    <div class="char-counter" id="charCounter">0 / 5000</div>
     <div class="btn-row">
-      <span class="hint">// Analysis takes ~20–30 seconds</span>
+      <span class="hint">// Ctrl + Enter to analyze</span>
       <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">
         <span class="btn-text">DETECT BLIND SPOTS</span>
-        <span class="btn-loading">ANALYZING...</span>
+        <span class="btn-loading">ANALYZING ...</span>
       </button>
     </div>
   </div>
 
-  <!-- ERROR -->
   <div class="error-box" id="errorBox"></div>
-
-  <!-- RESULTS -->
   <div id="results"></div>
 
 </div>
-
 <script>
 const LENSES = [
-  {
-    id: 'investor',
-    icon: '💰',
-    name: 'Skeptical Investor',
-    role: 'Market & Financial Viability',
-    color: 'red',
-    description: 'Scrutinizes financial assumptions, market size myths, competitive moats, unit economics, and scalability traps.'
-  },
-  {
-    id: 'devils_advocate',
-    icon: '👿',
-    name: "Devil's Advocate",
-    role: 'Logic & Assumptions',
-    color: 'amber',
-    description: 'Attacks every assumption, logical leap, and convenient belief embedded in the plan.'
-  },
-  {
-    id: 'psychologist',
-    icon: '🧠',
-    name: 'Forensic Psychologist',
-    role: 'Cognitive Biases & Emotional Blindspots',
-    color: 'amber',
-    description: 'Identifies cognitive biases, emotional reasoning, wishful thinking, and self-deception patterns.'
-  },
-  {
-    id: 'lawyer',
-    icon: '⚖️',
-    name: 'Corporate Lawyer',
-    role: 'Risk, Liability & Edge Cases',
-    color: 'teal',
-    description: 'Finds legal exposure, overlooked risks, regulatory minefields, and worst-case scenarios.'
-  }
+  { id: 'investor',        icon: '💰', name: 'Skeptical Investor',   role: 'Market & Financial Viability' },
+  { id: 'devils_advocate', icon: '👿', name: "Devil's Advocate",      role: 'Logic & Assumptions' },
+  { id: 'psychologist',    icon: '🧠', name: 'Forensic Psychologist', role: 'Cognitive Biases & Emotional Blindspots' },
+  { id: 'lawyer',          icon: '⚖️', name: 'Corporate Lawyer',      role: 'Risk, Liability & Edge Cases' }
 ];
 
-const SYSTEM_PROMPT = `You are a Blind Spot Detector — a ruthless, expert analysis engine that identifies hidden flaws, assumptions, biases, and risks in ideas, plans, or decisions.
-
-You will analyze the input from FOUR distinct expert perspectives and return a structured JSON response.
-
-For each perspective, identify 3–5 distinct blind spots. Each blind spot must have:
-- "title": short, punchy name of the blind spot (max 8 words)
-- "severity": "high", "medium", or "low"
-- "explanation": 2–3 sentences explaining the flaw, assumption, or risk in sharp, direct language
-- "fix": 1–2 sentence concrete suggestion to address it
-
-PERSPECTIVES:
-1. "investor" — Skeptical Investor: market size reality checks, financial model flaws, CAC/LTV problems, competitive dynamics, scalability ceilings, revenue assumption fallacies
-2. "devils_advocate" — Devil's Advocate: logical leaps, circular reasoning, false dichotomies, unfounded assumptions, "if everything goes right" thinking
-3. "psychologist" — Forensic Psychologist: cognitive biases (name them), sunk cost traps, confirmation bias, overconfidence, social validation masquerading as market research, FOMO-driven decisions
-4. "lawyer" — Corporate Lawyer: legal risks, regulatory issues, IP exposure, liability gaps, contract risks, worst-case edge cases that could kill the venture
-
-Also provide:
-- "overall_verdict": 2–3 sentences summarizing the most critical findings
-- "risk_level": "high", "medium", or "low" overall
-- "fatal_flaws": array of up to 3 short strings naming the most dangerous blind spots
-
-Return ONLY valid JSON in this exact shape, no markdown, no preamble:
-{
-  "investor": [ { "title": "", "severity": "", "explanation": "", "fix": "" } ],
-  "devils_advocate": [ { "title": "", "severity": "", "explanation": "", "fix": "" } ],
-  "psychologist": [ { "title": "", "severity": "", "explanation": "", "fix": "" } ],
-  "lawyer": [ { "title": "", "severity": "", "explanation": "", "fix": "" } ],
-  "overall_verdict": "",
-  "risk_level": "",
-  "fatal_flaws": []
-}`;
+document.getElementById('ideaInput').addEventListener('input', function () {
+  const len = this.value.length;
+  const c = document.getElementById('charCounter');
+  c.textContent = `${len} / 5000`;
+  c.className = 'char-counter' + (len > 4500 ? ' over' : len > 3500 ? ' warn' : '');
+});
 
 async function runAnalysis() {
-  const apiKey = document.getElementById('apiKey').value.trim();
   const idea = document.getElementById('ideaInput').value.trim();
-  const btn = document.getElementById('analyzeBtn');
-  const errorBox = document.getElementById('errorBox');
-  const resultsDiv = document.getElementById('results');
+  const btn  = document.getElementById('analyzeBtn');
+  const errBox = document.getElementById('errorBox');
 
-  errorBox.style.display = 'none';
-  errorBox.textContent = '';
-
-  if (!apiKey) { showError('Please enter your Anthropic API key.'); return; }
-  if (!idea || idea.length < 20) { showError('Please describe your idea in more detail (at least a sentence or two).'); return; }
+  errBox.style.display = 'none';
+  if (!idea || idea.length < 20) { showError('Please describe your idea in more detail.'); return; }
 
   btn.classList.add('loading');
   btn.disabled = true;
-
-  // Show skeleton loading
-  resultsDiv.innerHTML = buildSkeleton();
+  document.getElementById('results').innerHTML = buildSkeleton();
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{
-            role: 'user',
-            parts: [{ text: `Analyze this idea/plan/decision for blind spots:\n\n${idea}` }]
-          }],
-          generationConfig: { maxOutputTokens: 3000, temperature: 0.7 }
-        })
-      }
-    );
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idea })
+    });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `API error ${response.status}`);
-    }
-
-    const data = await response.json();
-    const raw = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
-
-    let parsed;
-    try {
-      const clean = raw.replace(/^```json|^```|```$/gm, '').trim();
-      parsed = JSON.parse(clean);
-    } catch(e) {
-      throw new Error('Failed to parse analysis response. Please try again.');
-    }
-
-    renderResults(parsed, idea);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    renderResults(data);
 
   } catch (err) {
-    resultsDiv.innerHTML = '';
+    document.getElementById('results').innerHTML = '';
     showError(err.message || 'Something went wrong. Please try again.');
   } finally {
     btn.classList.remove('loading');
@@ -673,147 +443,100 @@ async function runAnalysis() {
 }
 
 function showError(msg) {
-  const box = document.getElementById('errorBox');
-  box.textContent = '// ERROR: ' + msg;
-  box.style.display = 'block';
+  const b = document.getElementById('errorBox');
+  b.textContent = '// ERROR: ' + msg;
+  b.style.display = 'block';
 }
 
 function buildSkeleton() {
-  return `<div>
-    ${[1,2,3,4].map(() => `
-      <div class="loading-section">
-        <div class="skeleton" style="width:40%;height:12px;"></div>
-        <div class="skeleton" style="width:70%;height:20px;margin-top:12px;"></div>
-        <div class="skeleton" style="width:90%;"></div>
-        <div class="skeleton" style="width:80%;"></div>
-        <div class="skeleton" style="width:55%;"></div>
-      </div>
-    `).join('')}
-  </div>`;
+  return [1,2,3,4].map(() => `
+    <div class="loading-section">
+      <div class="skeleton" style="width:40%;height:12px;"></div>
+      <div class="skeleton" style="width:70%;height:20px;margin-top:12px;"></div>
+      <div class="skeleton" style="width:90%;"></div>
+      <div class="skeleton" style="width:80%;"></div>
+      <div class="skeleton" style="width:55%;"></div>
+    </div>`).join('');
 }
 
-function getSeverityClass(s) {
-  if (s === 'high') return '';
-  if (s === 'medium') return 'severity-medium';
-  return 'severity-low';
-}
-
-function getSeverityLabel(s) {
-  if (s === 'high') return 'CRITICAL';
-  if (s === 'medium') return 'MODERATE';
-  return 'MINOR';
-}
-
-function renderResults(data, idea) {
-  const riskClass = data.risk_level === 'high' ? 'verdict-high' : data.risk_level === 'medium' ? 'verdict-medium' : 'verdict-low';
-  const riskLabel = (data.risk_level || 'unknown').toUpperCase() + ' RISK';
-
-  // Count severities across all lenses
-  const allSpots = [...(data.investor||[]), ...(data.devils_advocate||[]), ...(data.psychologist||[]), ...(data.lawyer||[])];
-  const highCount = allSpots.filter(s => s.severity === 'high').length;
-  const medCount = allSpots.filter(s => s.severity === 'medium').length;
-  const lowCount = allSpots.filter(s => s.severity === 'low').length;
+function renderResults(data) {
+  const allSpots = LENSES.flatMap(l => data[l.id] || []);
+  const counts = { high: 0, medium: 0, low: 0 };
+  allSpots.forEach(s => counts[s.severity] = (counts[s.severity] || 0) + 1);
+  const rClass = `verdict-${data.risk_level || 'medium'}`;
 
   let html = `
     <div class="results-header">
       <div class="results-title">CASE FILE OPENED</div>
-      <div class="verdict-badge ${riskClass}">${riskLabel}</div>
+      <div class="verdict-badge ${rClass}">${(data.risk_level||'unknown').toUpperCase()} RISK</div>
     </div>
-
     <div class="summary-strip">
-      <div class="stat-item">
-        <div class="stat-val">${allSpots.length}</div>
-        <div class="stat-label">Total Blind Spots</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val">${highCount}</div>
-        <div class="stat-label">Critical</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val amber">${medCount}</div>
-        <div class="stat-label">Moderate</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val teal">${lowCount}</div>
-        <div class="stat-label">Minor</div>
-      </div>
-      ${data.fatal_flaws && data.fatal_flaws.length ? `
-      <div class="stat-item" style="grid-column: span 2">
+      <div class="stat-item"><div class="stat-val">${allSpots.length}</div><div class="stat-label">Total Blind Spots</div></div>
+      <div class="stat-item"><div class="stat-val">${counts.high||0}</div><div class="stat-label">Critical</div></div>
+      <div class="stat-item"><div class="stat-val amber">${counts.medium||0}</div><div class="stat-label">Moderate</div></div>
+      <div class="stat-item"><div class="stat-val teal">${counts.low||0}</div><div class="stat-label">Minor</div></div>
+      ${data.fatal_flaws?.length ? `
+      <div class="stat-item" style="grid-column:span 2">
         <div class="stat-label" style="margin-bottom:8px;">Fatal Flaws</div>
-        ${data.fatal_flaws.map(f => `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);letter-spacing:0.04em;margin-bottom:4px;">→ ${f}</div>`).join('')}
+        ${data.fatal_flaws.map(f=>`<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);letter-spacing:0.04em;margin-bottom:4px;">→ ${esc(f)}</div>`).join('')}
       </div>` : ''}
-    </div>
-  `;
+    </div>`;
 
   LENSES.forEach((lens, idx) => {
     const spots = data[lens.id] || [];
+    const sClass = s => s==='medium'?'severity-medium':s==='low'?'severity-low':'';
+    const sLabel = s => s==='high'?'CRITICAL':s==='medium'?'MODERATE':'MINOR';
     html += `
       <div class="lens-section" id="lens-${idx}">
         <div class="lens-header">
           <div class="lens-icon">${lens.icon}</div>
-          <div>
-            <div class="lens-name">${lens.name}</div>
-            <div class="lens-role">${lens.role}</div>
-          </div>
+          <div><div class="lens-name">${lens.name}</div><div class="lens-role">${lens.role}</div></div>
         </div>
-        ${spots.map((spot, si) => `
-          <div class="blind-spot ${getSeverityClass(spot.severity)}" id="spot-${idx}-${si}">
-            <div class="blind-spot-header" onclick="toggleSpot('spot-${idx}-${si}')">
+        ${spots.map((spot,si)=>`
+          <div class="blind-spot ${sClass(spot.severity)}" id="sp-${idx}-${si}">
+            <div class="blind-spot-header" onclick="tog('sp-${idx}-${si}')">
               <div class="severity-dot"></div>
-              <div class="blind-spot-title">${escapeHtml(spot.title)}</div>
-              <div class="severity-tag">${getSeverityLabel(spot.severity)}</div>
+              <div class="blind-spot-title">${esc(spot.title)}</div>
+              <div class="severity-tag">${sLabel(spot.severity)}</div>
               <div class="expand-icon">▼</div>
             </div>
             <div class="blind-spot-body">
               <div class="body-label">Analysis</div>
-              <div class="body-text">${escapeHtml(spot.explanation)}</div>
-              <div class="body-label">How to address it</div>
-              <div class="fix-text">${escapeHtml(spot.fix)}</div>
+              <div class="body-text">${esc(spot.explanation)}</div>
+              <div class="body-label">How to Address It</div>
+              <div class="fix-text">${esc(spot.fix)}</div>
             </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
+          </div>`).join('')}
+      </div>`;
   });
 
   html += `
     <div class="verdict-section">
-      <div class="verdict-text">${escapeHtml(data.overall_verdict || '')}</div>
+      <div class="verdict-text">${esc(data.overall_verdict||'')}</div>
     </div>
-  `;
+    <button class="btn-reset" onclick="reset()">← ANALYZE ANOTHER IDEA</button>`;
 
   document.getElementById('results').innerHTML = html;
-
-  // Stagger fade-in
-  LENSES.forEach((_, idx) => {
-    setTimeout(() => {
-      const el = document.getElementById(`lens-${idx}`);
-      if (el) el.classList.add('visible');
-    }, 100 + idx * 150);
-  });
-
+  LENSES.forEach((_,i) => setTimeout(()=>document.getElementById(`lens-${i}`)?.classList.add('visible'), 100+i*150));
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function toggleSpot(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.toggle('open');
+function tog(id) { document.getElementById(id)?.classList.toggle('open'); }
+
+function reset() {
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('ideaInput').value = '';
+  document.getElementById('charCounter').textContent = '0 / 5000';
+  document.getElementById('errorBox').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function escapeHtml(str) {
-  return (str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-// Allow Ctrl+Enter to submit
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('ideaInput').addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runAnalysis();
-  });
+document.getElementById('ideaInput').addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && e.key==='Enter') runAnalysis();
 });
 </script>
 </body>
