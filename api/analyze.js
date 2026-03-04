@@ -51,9 +51,10 @@ module.exports = async function handler(req, res) {
 
   // Try models in order — fall back if one fails
   const MODELS = [
-    'meta-llama/llama-3-8b-instruct:free',
-    'mistralai/mistral-7b-instruct:free',
-    'google/gemma-3-4b-it:free'
+    'openrouter/free',                          // auto-picks any available free model
+    'meta-llama/llama-3.3-70b-instruct:free',  // fallback 1
+    'meta-llama/llama-3.1-8b-instruct:free',   // fallback 2
+    'mistralai/mistral-7b-instruct:free'        // fallback 3
   ];
 
   let lastError = '';
