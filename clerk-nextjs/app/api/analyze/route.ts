@@ -1,5 +1,3 @@
-// app/api/analyze/route.ts — Next.js App Router API Route
-
 const SYSTEM_PROMPT = `You are a Blind Spot Detector — a ruthless expert analysis engine.
 
 Analyze the user's idea from FOUR perspectives and return ONLY a raw JSON object.
@@ -33,13 +31,11 @@ const MODELS = [
 ];
 
 export async function POST(req: Request) {
-  // Auth: verify Clerk JWT
   const authHeader = req.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Parse body
   let body: { idea?: string };
   try { body = await req.json(); }
   catch { return Response.json({ error: "Invalid JSON body" }, { status: 400 }); }
@@ -80,26 +76,31 @@ export async function POST(req: Request) {
       const rawText = await orRes.text();
       if (!rawText?.trim()) { lastError = `${model}: empty response`; continue; }
 
-      let envelope: any;
+      let envelope: Record<string, unknown>;
       try { envelope = JSON.parse(rawText); }
       catch { lastError = `${model}: non-JSON envelope`; continue; }
 
-      if (envelope.error) { lastError = `${model}: ${envelope.error.message}`; continue; }
+      if (envelope.error) {
+        const err = envelope.error as Record<string, unknown>;
+        lastError = `${model}: ${err.message}`; continue;
+      }
 
-      const content = envelope.choices?.[0]?.message?.content || "";
+      const choices = envelope.choices as Array<Record<string, unknown>>;
+      const message = choices?.[0]?.message as Record<string, unknown>;
+      const content = (message?.content as string) || "";
       if (!content.trim()) { lastError = `${model}: empty content`; continue; }
 
       let jsonStr = content.trim()
         .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
       const start = jsonStr.indexOf("{");
-      const end   = jsonStr.lastIndexOf("}");
+      const end = jsonStr.lastIndexOf("}");
       if (start === -1 || end === -1) { lastError = `${model}: no JSON found`; continue; }
       jsonStr = jsonStr.slice(start, end + 1);
 
-      let parsed: any;
+      let parsed: Record<string, unknown>;
       try { parsed = JSON.parse(jsonStr); }
-      catch (e: any) { lastError = `${model}: parse failed — ${e.message}`; continue; }
+      catch (e: unknown) { lastError = `${model}: parse failed`; continue; }
 
       const required = ["investor", "devils_advocate", "psychologist", "lawyer", "overall_verdict", "risk_level"];
       const missing = required.filter((k) => !(k in parsed));
@@ -108,8 +109,8 @@ export async function POST(req: Request) {
       parsed._model = model;
       return Response.json(parsed);
 
-    } catch (err: any) {
-      lastError = `${model}: ${err.message}`;
+    } catch (err: unknown) {
+      lastError = `${model}: ${err instanceof Error ? err.message : "unknown"}`;
       continue;
     }
   }
