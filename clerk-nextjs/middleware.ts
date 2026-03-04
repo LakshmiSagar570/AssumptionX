@@ -1,12 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Only protect the home route — /sign-in is public
-const isProtectedRoute = createRouteMatcher(["/"]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) await auth.protect();
-});
-
 export const config = {
   matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  runtime: "nodejs",   // ← force Node.js, not Edge
 };
+
+const isProtectedRoute = createRouteMatcher(["/"]);
+
+export default clerkMiddleware((auth, req) => {
+  if (isProtectedRoute(req)) auth.protect();
+});
