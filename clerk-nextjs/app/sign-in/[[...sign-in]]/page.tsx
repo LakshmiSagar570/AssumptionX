@@ -33,7 +33,7 @@ export default function SignInPage() {
           Sign in to continue
         </div>
       </div>
-      <SignIn routing="hash" forceRedirectUrl="/sign-in-complete" />
+      <SignIn forceRedirectUrl="/" />
     </div>
   );
 }
