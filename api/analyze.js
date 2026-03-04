@@ -1,4 +1,10 @@
 // api/analyze.js — Vercel Serverless Function (CommonJS)
+// Protected by Clerk JWT + Firebase Firestore for history & rate limiting
+
+const { createRemoteJWKSet, jwtVerify } = require('jose');
+const { db } = require('./firebase');
+
+const DAILY_LIMIT = 10; // max analyses per user per day
 
 const SYSTEM_PROMPT = `You are a Blind Spot Detector — a ruthless expert analysis engine.
 
@@ -22,21 +28,149 @@ Also:
 - "risk_level": exactly "high", "medium", or "low"
 - "fatal_flaws": array of up to 3 short strings
 
-Return ONLY this JSON shape, nothing else:
+Return ONLY this JSON shape and nothing else:
 {"investor":[{"title":"","severity":"","explanation":"","fix":""}],"devils_advocate":[{"title":"","severity":"","explanation":"","fix":""}],"psychologist":[{"title":"","severity":"","explanation":"","fix":""}],"lawyer":[{"title":"","severity":"","explanation":"","fix":""}],"overall_verdict":"","risk_level":"","fatal_flaws":[]}`;
 
+// ── Verify Clerk JWT ──────────────────────────────────────────────────────────
+async function verifyClerkToken(authHeader) {
+  if (!authHeader?.startsWith('Bearer '))
+    throw new Error('Missing or invalid Authorization header');
+
+  const token = authHeader.split(' ')[1];
+  const clerkDomain = process.env.CLERK_DOMAIN;
+  if (!clerkDomain) throw new Error('CLERK_DOMAIN not set');
+
+  const JWKS = createRemoteJWKSet(
+    new URL(`https://${clerkDomain}/.well-known/jwks.json`)
+  );
+  const { payload } = await jwtVerify(token, JWKS, { clockTolerance: 60 });
+  return payload;
+}
+
+// ── Check + increment daily usage ────────────────────────────────────────────
+async function checkAndIncrementUsage(userId) {
+  const today = new Date().toISOString().split('T')[0]; // "2024-03-04"
+  const ref = db.collection('users').doc(userId).collection('dailyUsage').doc(today);
+
+  const result = await db.runTransaction(async (t) => {
+    const doc = await t.get(ref);
+    const current = doc.exists ? doc.data().count : 0;
+
+    if (current >= DAILY_LIMIT) {
+      return { allowed: false, count: current };
+    }
+
+    t.set(ref, { count: current + 1, updatedAt: new Date() }, { merge: true });
+    return { allowed: true, count: current + 1 };
+  });
+
+  return result;
+}
+
+// ── Save analysis to Firestore ───────────────────────────────────────────────
+async function saveAnalysis(userId, idea, result) {
+  const ref = db.collection('users').doc(userId).collection('analyses').doc();
+  await ref.set({
+    id: ref.id,
+    idea: idea.slice(0, 300), // store truncated idea as preview
+    riskLevel: result.risk_level || 'unknown',
+    fatalFlaws: result.fatal_flaws || [],
+    overallVerdict: result.overall_verdict || '',
+    fullResult: result,
+    model: result._model || 'unknown',
+    createdAt: new Date(),
+  });
+  return ref.id;
+}
+
+// ── OpenRouter call with model fallback ──────────────────────────────────────
+const MODELS = [
+  'openrouter/free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'mistralai/mistral-7b-instruct:free'
+];
+
+async function runAnalysisWithFallback(idea, apiKey, referer) {
+  let lastError = '';
+
+  for (const model of MODELS) {
+    try {
+      const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': referer,
+          'X-Title': 'Blind Spot Detector'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user',   content: `Analyze this for blind spots. Return ONLY JSON:\n\n${idea}` }
+          ],
+          max_tokens: 3000,
+          temperature: 0.7
+        })
+      });
+
+      const rawText = await orRes.text();
+      if (!rawText?.trim()) { lastError = `${model}: empty response`; continue; }
+
+      let envelope;
+      try { envelope = JSON.parse(rawText); } catch { lastError = `${model}: non-JSON`; continue; }
+      if (envelope.error) { lastError = `${model}: ${envelope.error.message}`; continue; }
+
+      const content = envelope.choices?.[0]?.message?.content || '';
+      if (!content.trim()) { lastError = `${model}: empty content`; continue; }
+
+      let jsonStr = content.trim()
+        .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      const start = jsonStr.indexOf('{');
+      const end   = jsonStr.lastIndexOf('}');
+      if (start === -1 || end === -1) { lastError = `${model}: no JSON found`; continue; }
+      jsonStr = jsonStr.slice(start, end + 1);
+
+      let parsed;
+      try { parsed = JSON.parse(jsonStr); } catch (e) { lastError = `${model}: parse failed`; continue; }
+
+      const required = ['investor', 'devils_advocate', 'psychologist', 'lawyer', 'overall_verdict', 'risk_level'];
+      const missing = required.filter(k => !(k in parsed));
+      if (missing.length) { lastError = `${model}: missing ${missing.join(', ')}`; continue; }
+
+      parsed._model = model;
+      return parsed;
+
+    } catch (err) {
+      lastError = `${model}: ${err.message}`;
+    }
+  }
+
+  throw new Error(`All models failed. Last: ${lastError}`);
+}
+
+// ── Main handler ─────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Manually parse body — Vercel CommonJS doesn't always auto-parse
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch { body = {}; }
+  // Auth
+  let userPayload;
+  try {
+    userPayload = await verifyClerkToken(req.headers.authorization);
+  } catch (err) {
+    return res.status(401).json({ error: 'Unauthorized: ' + err.message });
   }
+  const userId = userPayload.sub;
+
+  // Parse body
+  let body = req.body;
+  if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
   if (!body || typeof body !== 'object') body = {};
 
   const idea = body.idea;
@@ -46,95 +180,35 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Input too long. Keep it under 5000 characters.' });
 
   const API_KEY = process.env.OPENROUTER_API_KEY;
-  if (!API_KEY)
-    return res.status(500).json({ error: 'OPENROUTER_API_KEY is not set in Vercel environment variables.' });
+  if (!API_KEY) return res.status(500).json({ error: 'OPENROUTER_API_KEY not set.' });
 
-  // Try models in order — fall back if one fails
-  const MODELS = [
-    'openrouter/free',                          // auto-picks any available free model
-    'meta-llama/llama-3.3-70b-instruct:free',  // fallback 1
-    'meta-llama/llama-3.1-8b-instruct:free',   // fallback 2
-    'mistralai/mistral-7b-instruct:free'        // fallback 3
-  ];
-
-  let lastError = '';
-
-  for (const model of MODELS) {
-    try {
-      const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
-          'HTTP-Referer': 'https://assumption-x.vercel.app',
-          'X-Title': 'Blind Spot Detector'
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user',   content: `Analyze this for blind spots. Return ONLY JSON:\n\n${idea.trim()}` }
-          ],
-          max_tokens: 3000,
-          temperature: 0.7
-        })
-      });
-
-      const rawText = await orRes.text();
-
-      if (!rawText || rawText.trim() === '') {
-        lastError = `${model}: empty response`;
-        continue;
-      }
-
-      let envelope;
-      try { envelope = JSON.parse(rawText); }
-      catch { lastError = `${model}: non-JSON response`; continue; }
-
-      if (envelope.error) {
-        lastError = `${model}: ${envelope.error.message || JSON.stringify(envelope.error)}`;
-        continue;
-      }
-
-      const messageContent = envelope.choices?.[0]?.message?.content || '';
-      if (!messageContent.trim()) {
-        lastError = `${model}: empty content`;
-        continue;
-      }
-
-      // Strip markdown fences
-      let jsonStr = messageContent.trim()
-        .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-
-      const start = jsonStr.indexOf('{');
-      const end   = jsonStr.lastIndexOf('}');
-      if (start === -1 || end === -1) {
-        lastError = `${model}: no JSON object found`;
-        continue;
-      }
-      jsonStr = jsonStr.slice(start, end + 1);
-
-      let parsed;
-      try { parsed = JSON.parse(jsonStr); }
-      catch (e) { lastError = `${model}: JSON parse failed — ${e.message}`; continue; }
-
-      const required = ['investor', 'devils_advocate', 'psychologist', 'lawyer', 'overall_verdict', 'risk_level'];
-      const missing = required.filter(k => !(k in parsed));
-      if (missing.length) {
-        lastError = `${model}: missing keys — ${missing.join(', ')}`;
-        continue;
-      }
-
-      // Success — also return which model was used
-      parsed._model = model;
-      return res.status(200).json(parsed);
-
-    } catch (err) {
-      lastError = `${model}: ${err.message}`;
-      continue;
-    }
+  // Daily limit check
+  const usage = await checkAndIncrementUsage(userId);
+  if (!usage.allowed) {
+    return res.status(429).json({
+      error: `Daily limit reached. You've used ${DAILY_LIMIT}/${DAILY_LIMIT} analyses today. Resets at midnight UTC.`
+    });
   }
 
-  // All models failed
-  return res.status(502).json({ error: `All models failed. Last error: ${lastError}` });
+  // Run analysis
+  try {
+    const referer = req.headers.origin || 'https://assumption-x.vercel.app';
+    const result = await runAnalysisWithFallback(idea.trim(), API_KEY, referer);
+
+    // Save to Firestore (non-blocking — don't fail the request if save fails)
+    const analysisId = await saveAnalysis(userId, idea, result).catch(err => {
+      console.error('Failed to save analysis:', err);
+      return null;
+    });
+
+    result._analysisId = analysisId;
+    result._usageToday = usage.count;
+    result._limitPerDay = DAILY_LIMIT;
+
+    return res.status(200).json(result);
+
+  } catch (err) {
+    console.error('Analysis error:', err);
+    return res.status(502).json({ error: err.message });
+  }
 };

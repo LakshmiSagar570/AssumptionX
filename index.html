@@ -1,301 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Blind Spot Detector</title>
+<script async crossorigin="anonymous"
+  data-clerk-publishable-key="PASTE_YOUR_CLERK_PUBLISHABLE_KEY_HERE"
+  src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
 <style>
   :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --border: #1e1e1e;
-    --border-bright: #2e2e2e;
-    --red: #e63946;
-    --amber: #f4a026;
-    --teal: #2ec4b6;
-    --green: #57cc99;
-    --dim: #444;
-    --muted: #666;
-    --text: #d4d0c8;
-    --text-bright: #f0ece0;
+    --bg:#0a0a0a;--surface:#111;--border:#1e1e1e;--border-bright:#2e2e2e;
+    --red:#e63946;--amber:#f4a026;--teal:#2ec4b6;--green:#57cc99;
+    --dim:#444;--muted:#666;--text:#d4d0c8;--text-bright:#f0ece0;
   }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-weight: 300;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none; z-index: 0;
-  }
-  .container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 60px 24px 120px; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+  /* AUTH WALL */
+  #auth-wall{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:24px}
+  .auth-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,8vw,80px);letter-spacing:.04em;line-height:.9;color:var(--text-bright);text-align:center}
+  .auth-title span{color:var(--red)}
+  .auth-sub{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:10px}
+  #clerk-sign-in{width:100%;max-width:400px}
+
+  /* NAV */
+  #app-nav{display:none;position:sticky;top:0;z-index:50;background:rgba(10,10,10,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border-bright);padding:12px 24px;align-items:center;justify-content:space-between}
+  #app-nav.visible{display:flex}
+  .nav-brand{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.1em;color:var(--text-bright)}
+  .nav-brand span{color:var(--red)}
+  .nav-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .nav-user{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+  .usage-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;padding:4px 10px;border:1px solid var(--border-bright);color:var(--muted)}
+  .usage-badge.warn{color:var(--amber);border-color:var(--amber)}
+  .usage-badge.full{color:var(--red);border-color:var(--red)}
+  .nav-btn{background:transparent;color:var(--muted);border:1px solid var(--border-bright);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:color .2s,border-color .2s}
+  .nav-btn:hover{color:var(--text-bright);border-color:var(--text-bright)}
+  .nav-btn.active{color:var(--teal);border-color:var(--teal)}
+  .nav-btn.danger:hover{color:var(--red);border-color:var(--red)}
+
+  /* LAYOUT */
+  #main-app{display:none}
+  #main-app.visible{display:block}
+
+  /* TABS */
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+  .container{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:60px 24px 120px}
 
   /* HEADER */
-  header { margin-bottom: 64px; display: flex; flex-direction: column; gap: 10px; }
-  .eyebrow {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    letter-spacing: 0.25em; color: var(--red); text-transform: uppercase;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .eyebrow::after { content: ''; flex: 1; height: 1px; background: var(--red); opacity: 0.3; max-width: 120px; }
-  h1 { font-family: 'Bebas Neue', sans-serif; font-size: clamp(52px, 9vw, 96px); letter-spacing: 0.04em; line-height: 0.9; color: var(--text-bright); }
-  h1 span { color: var(--red); }
-  .subtitle { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 520px; margin-top: 8px; }
+  header{margin-bottom:64px;display:flex;flex-direction:column;gap:10px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.25em;color:var(--red);text-transform:uppercase;display:flex;align-items:center;gap:10px}
+  .eyebrow::after{content:'';flex:1;height:1px;background:var(--red);opacity:.3;max-width:120px}
+  h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,9vw,96px);letter-spacing:.04em;line-height:.9;color:var(--text-bright)}
+  h1 span{color:var(--red)}
+  .subtitle{font-size:14px;color:var(--muted);line-height:1.7;max-width:520px;margin-top:8px}
 
   /* INPUT */
-  .input-section { margin-bottom: 32px; }
-  .input-label {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase;
-    margin-bottom: 12px; display: flex; align-items: center; gap: 12px;
-  }
-  .input-label::after { content: ''; flex: 1; height: 1px; background: var(--border-bright); }
-  textarea {
-    width: 100%; min-height: 180px;
-    background: var(--surface); border: 1px solid var(--border-bright); border-top: 2px solid var(--teal);
-    color: var(--text-bright); font-family: 'IBM Plex Sans', sans-serif; font-size: 15px;
-    font-weight: 300; line-height: 1.7; padding: 20px 24px; resize: vertical; outline: none;
-    transition: border-color 0.2s;
-  }
-  textarea::placeholder { color: var(--dim); font-style: italic; }
-  textarea:focus { border-color: var(--teal); }
-  .char-counter { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--dim); text-align: right; margin-top: 6px; }
-  .char-counter.warn { color: var(--amber); }
-  .char-counter.over { color: var(--red); }
+  .input-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+  .input-label::after{content:'';flex:1;height:1px;background:var(--border-bright)}
+  textarea{width:100%;min-height:180px;background:var(--surface);border:1px solid var(--border-bright);border-top:2px solid var(--teal);color:var(--text-bright);font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:300;line-height:1.7;padding:20px 24px;resize:vertical;outline:none;transition:border-color .2s}
+  textarea::placeholder{color:var(--dim);font-style:italic}
+  textarea:focus{border-color:var(--teal)}
+  .char-counter{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);text-align:right;margin-top:6px}
+  .char-counter.warn{color:var(--amber)} .char-counter.over{color:var(--red)}
+  .btn-row{display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:12px}
+  .hint{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+  .btn-analyze{background:var(--red);color:#fff;border:none;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.12em;padding:14px 40px;cursor:pointer;transition:background .15s,transform .1s}
+  .btn-analyze:hover:not(:disabled){background:#c1121f}
+  .btn-analyze:active:not(:disabled){transform:scale(.98)}
+  .btn-analyze:disabled{background:var(--dim);cursor:not-allowed}
 
-  .btn-row { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 12px; }
-  .hint { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--dim); }
-
-  .btn-analyze {
-    background: var(--red); color: #fff; border: none;
-    font-family: 'Bebas Neue', sans-serif; font-size: 18px;
-    letter-spacing: 0.12em; padding: 14px 40px; cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
-  }
-  .btn-analyze:hover:not(:disabled) { background: #c1121f; }
-  .btn-analyze:active:not(:disabled) { transform: scale(0.98); }
-  .btn-analyze:disabled { background: var(--dim); cursor: not-allowed; }
-
-  /* LOADING STATUS */
-  #loadingStatus {
-    display: none;
-    margin-top: 32px;
-    border: 1px solid var(--border-bright);
-    border-left: 3px solid var(--teal);
-    background: var(--surface);
-    padding: 20px 24px;
-  }
-  #loadingStatus.active { display: block; }
-  .loading-title {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    letter-spacing: 0.2em; color: var(--teal); text-transform: uppercase; margin-bottom: 16px;
-  }
-  .loading-steps { display: flex; flex-direction: column; gap: 10px; }
-  .loading-step {
-    display: flex; align-items: center; gap: 12px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--dim);
-    transition: color 0.3s;
-  }
-  .loading-step.active { color: var(--text-bright); }
-  .loading-step.done { color: var(--teal); }
-  .step-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex-shrink: 0;
-    transition: background 0.3s;
-  }
-  .loading-step.active .step-dot { background: var(--amber); animation: pulse 1s infinite; }
-  .loading-step.done .step-dot { background: var(--teal); animation: none; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  /* LOADING */
+  #loadingStatus{display:none;margin-top:32px;border:1px solid var(--border-bright);border-left:3px solid var(--teal);background:var(--surface);padding:20px 24px}
+  #loadingStatus.active{display:block}
+  .loading-title{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;color:var(--teal);text-transform:uppercase;margin-bottom:16px}
+  .loading-steps{display:flex;flex-direction:column;gap:10px}
+  .loading-step{display:flex;align-items:center;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim);transition:color .3s}
+  .loading-step.active{color:var(--text-bright)} .loading-step.done{color:var(--teal)}
+  .step-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background .3s}
+  .loading-step.active .step-dot{background:var(--amber);animation:pulse 1s infinite}
+  .loading-step.done .step-dot{background:var(--teal);animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
   /* ERROR */
-  .error-box {
-    background: rgba(230,57,70,0.08); border: 1px solid rgba(230,57,70,0.3);
-    border-left: 3px solid var(--red); padding: 14px 20px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--red);
-    margin-top: 24px; display: none; line-height: 1.6;
-  }
+  .error-box{background:rgba(230,57,70,.08);border:1px solid rgba(230,57,70,.3);border-left:3px solid var(--red);padding:14px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--red);margin-top:24px;display:none;line-height:1.6}
 
   /* RESULTS */
-  #results { margin-top: 60px; }
-  .results-header {
-    display: flex; align-items: flex-end; justify-content: space-between;
-    margin-bottom: 32px; padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-bright); flex-wrap: wrap; gap: 12px;
-  }
-  .results-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 0.06em; color: var(--text-bright); }
-  .results-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-
-  .verdict-badge {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    letter-spacing: 0.15em; text-transform: uppercase; padding: 6px 14px; border: 1px solid; font-weight: 500;
-  }
-  .verdict-high   { color: var(--red);   border-color: var(--red);   background: rgba(230,57,70,0.08); }
-  .verdict-medium { color: var(--amber); border-color: var(--amber); background: rgba(244,160,38,0.08); }
-  .verdict-low    { color: var(--green); border-color: var(--green); background: rgba(87,204,153,0.08); }
-
-  .btn-copy {
-    background: transparent; color: var(--muted);
-    border: 1px solid var(--border-bright);
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 6px 14px; cursor: pointer;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .btn-copy:hover { color: var(--teal); border-color: var(--teal); }
-  .btn-copy.copied { color: var(--teal); border-color: var(--teal); }
+  #results{margin-top:60px}
+  .results-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--border-bright);flex-wrap:wrap;gap:12px}
+  .results-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.06em;color:var(--text-bright)}
+  .results-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .verdict-badge{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;padding:6px 14px;border:1px solid;font-weight:500}
+  .verdict-high{color:var(--red);border-color:var(--red);background:rgba(230,57,70,.08)}
+  .verdict-medium{color:var(--amber);border-color:var(--amber);background:rgba(244,160,38,.08)}
+  .verdict-low{color:var(--green);border-color:var(--green);background:rgba(87,204,153,.08)}
+  .btn-copy{background:transparent;color:var(--muted);border:1px solid var(--border-bright);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 14px;cursor:pointer;transition:color .2s,border-color .2s}
+  .btn-copy:hover{color:var(--teal);border-color:var(--teal)}
+  .btn-copy.copied{color:var(--teal);border-color:var(--teal)}
 
   /* RISK METER */
-  .risk-meter-section {
-    background: var(--surface); border: 1px solid var(--border-bright);
-    border-top: 2px solid var(--red); padding: 24px 28px; margin-bottom: 40px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
-  }
-  @media(max-width:600px) { .risk-meter-section { grid-template-columns: 1fr; } }
-
-  .stat-col { display: flex; flex-direction: column; gap: 16px; }
-  .stats-row { display: flex; gap: 24px; flex-wrap: wrap; }
-  .stat-item { display: flex; flex-direction: column; gap: 4px; }
-  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1; color: var(--red); }
-  .stat-val.amber { color: var(--amber); }
-  .stat-val.teal  { color: var(--teal); }
-  .stat-val.green { color: var(--green); }
-  .stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
-
-  .meter-col { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
-  .meter-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; }
-  .meter-bar-wrap { background: var(--border); height: 8px; position: relative; }
-  .meter-bar { height: 100%; transition: width 1s ease; }
-  .meter-bar.high   { width: 100%; background: var(--red); }
-  .meter-bar.medium { width: 60%;  background: var(--amber); }
-  .meter-bar.low    { width: 25%;  background: var(--green); }
-  .meter-text { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.08em; }
-  .meter-text.high   { color: var(--red); }
-  .meter-text.medium { color: var(--amber); }
-  .meter-text.low    { color: var(--green); }
-
-  .fatal-flaws { margin-top: 8px; }
-  .fatal-flaws-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
-  .fatal-flaw-item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--red); letter-spacing: 0.04em; margin-bottom: 4px; }
+  .risk-meter-section{background:var(--surface);border:1px solid var(--border-bright);border-top:2px solid var(--red);padding:24px 28px;margin-bottom:40px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:600px){.risk-meter-section{grid-template-columns:1fr}}
+  .stat-col{display:flex;flex-direction:column;gap:16px}
+  .stats-row{display:flex;gap:24px;flex-wrap:wrap}
+  .stat-item{display:flex;flex-direction:column;gap:4px}
+  .stat-val{font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:1;color:var(--red)}
+  .stat-val.amber{color:var(--amber)} .stat-val.green{color:var(--green)}
+  .stat-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+  .meter-col{display:flex;flex-direction:column;justify-content:center;gap:10px}
+  .meter-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+  .meter-bar-wrap{background:var(--border);height:8px}
+  .meter-bar{height:100%;width:0%;transition:width 1s ease}
+  .meter-bar.high{background:var(--red)} .meter-bar.medium{background:var(--amber)} .meter-bar.low{background:var(--green)}
+  .meter-text{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.08em}
+  .meter-text.high{color:var(--red)} .meter-text.medium{color:var(--amber)} .meter-text.low{color:var(--green)}
+  .fatal-flaws-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  .fatal-flaw-item{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);letter-spacing:.04em;margin-bottom:4px}
 
   /* LENS */
-  .lens-section { margin-bottom: 48px; opacity: 0; transform: translateY(16px); transition: opacity 0.4s ease, transform 0.4s ease; }
-  .lens-section.visible { opacity: 1; transform: translateY(0); }
-  .lens-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-  .lens-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid var(--border-bright); flex-shrink: 0; }
-  .lens-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.08em; color: var(--text-bright); }
-  .lens-role { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-top: 1px; }
+  .lens-section{margin-bottom:48px;opacity:0;transform:translateY(16px);transition:opacity .4s ease,transform .4s ease}
+  .lens-section.visible{opacity:1;transform:translateY(0)}
+  .lens-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .lens-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--border-bright);flex-shrink:0}
+  .lens-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em;color:var(--text-bright)}
+  .lens-role{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:1px}
 
   /* BLIND SPOT CARD */
-  .blind-spot { border: 1px solid var(--border); border-left: 3px solid var(--red); margin-bottom: 12px; overflow: hidden; }
-  .blind-spot.severity-medium { border-left-color: var(--amber); }
-  .blind-spot.severity-low    { border-left-color: var(--green); }
-
-  .blind-spot-header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; background: var(--surface); cursor: pointer; user-select: none; }
-  .severity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
-  .severity-medium .severity-dot { background: var(--amber); }
-  .severity-low    .severity-dot { background: var(--green); }
-
-  .blind-spot-title { flex: 1; font-size: 14px; font-weight: 500; color: var(--text-bright); letter-spacing: 0.02em; }
-
-  .severity-tag {
-    font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--red); border: 1px solid rgba(230,57,70,0.3); padding: 3px 8px; white-space: nowrap;
-  }
-  .severity-medium .severity-tag { color: var(--amber); border-color: rgba(244,160,38,0.3); }
-  .severity-low    .severity-tag { color: var(--green); border-color: rgba(87,204,153,0.3); }
-
-  .expand-icon { color: var(--muted); font-size: 12px; transition: transform 0.2s; flex-shrink: 0; }
-  .blind-spot.open .expand-icon { transform: rotate(180deg); }
-  .blind-spot-body { display: none; padding: 0 20px 20px; background: var(--surface); border-top: 1px solid var(--border); }
-  .blind-spot.open .blind-spot-body { display: block; }
-  .body-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin: 16px 0 6px; }
-  .body-text { font-size: 14px; line-height: 1.75; color: var(--text); }
-  .fix-text  { font-size: 14px; line-height: 1.75; color: var(--teal); font-style: italic; }
+  .blind-spot{border:1px solid var(--border);border-left:3px solid var(--red);margin-bottom:12px;overflow:hidden}
+  .blind-spot.severity-medium{border-left-color:var(--amber)} .blind-spot.severity-low{border-left-color:var(--green)}
+  .blind-spot-header{display:flex;align-items:center;gap:14px;padding:14px 20px;background:var(--surface);cursor:pointer;user-select:none}
+  .severity-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0}
+  .severity-medium .severity-dot{background:var(--amber)} .severity-low .severity-dot{background:var(--green)}
+  .blind-spot-title{flex:1;font-size:14px;font-weight:500;color:var(--text-bright);letter-spacing:.02em}
+  .severity-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);border:1px solid rgba(230,57,70,.3);padding:3px 8px;white-space:nowrap}
+  .severity-medium .severity-tag{color:var(--amber);border-color:rgba(244,160,38,.3)} .severity-low .severity-tag{color:var(--green);border-color:rgba(87,204,153,.3)}
+  .expand-icon{color:var(--muted);font-size:12px;transition:transform .2s;flex-shrink:0}
+  .blind-spot.open .expand-icon{transform:rotate(180deg)}
+  .blind-spot-body{display:none;padding:0 20px 20px;background:var(--surface);border-top:1px solid var(--border)}
+  .blind-spot.open .blind-spot-body{display:block}
+  .body-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin:16px 0 6px}
+  .body-text{font-size:14px;line-height:1.75;color:var(--text)}
+  .fix-text{font-size:14px;line-height:1.75;color:var(--teal);font-style:italic}
 
   /* VERDICT */
-  .verdict-section { border: 1px solid var(--border-bright); padding: 28px; margin-top: 40px; position: relative; }
-  .verdict-section::before {
-    content: 'FINAL VERDICT'; position: absolute; top: -1px; left: 28px;
-    background: var(--bg); font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px; letter-spacing: 0.25em; color: var(--muted); padding: 0 8px;
-  }
-  .verdict-text { font-size: 15px; line-height: 1.8; color: var(--text); margin-top: 8px; }
-  .model-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--dim); margin-top: 16px; }
+  .verdict-section{border:1px solid var(--border-bright);padding:28px;margin-top:40px;position:relative}
+  .verdict-section::before{content:'FINAL VERDICT';position:absolute;top:-1px;left:28px;background:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.25em;color:var(--muted);padding:0 8px}
+  .verdict-text{font-size:15px;line-height:1.8;color:var(--text);margin-top:8px}
+  .model-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:16px}
+  .btn-reset{background:transparent;color:var(--muted);border:1px solid var(--border-bright);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;padding:10px 20px;cursor:pointer;margin-top:32px;transition:color .2s,border-color .2s}
+  .btn-reset:hover{color:var(--text);border-color:var(--text)}
 
-  .btn-reset {
-    background: transparent; color: var(--muted); border: 1px solid var(--border-bright);
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
-    padding: 10px 20px; cursor: pointer; margin-top: 32px; transition: color 0.2s, border-color 0.2s;
-  }
-  .btn-reset:hover { color: var(--text); border-color: var(--text); }
+  /* ── HISTORY PANEL ── */
+  #history-panel{display:none;position:relative;z-index:1;max-width:900px;margin:0 auto;padding:40px 24px 120px}
+  #history-panel.active{display:block}
+  .history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--border-bright)}
+  .history-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.06em;color:var(--text-bright)}
+  .history-empty{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);padding:48px 0;text-align:center;border:1px dashed var(--border-bright)}
+  .history-item{border:1px solid var(--border);border-left:3px solid var(--red);margin-bottom:12px;background:var(--surface);overflow:hidden}
+  .history-item.medium{border-left-color:var(--amber)} .history-item.low{border-left-color:var(--green)}
+  .history-item-header{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;cursor:pointer}
+  .history-item-meta{flex:1;min-width:0}
+  .history-idea{font-size:14px;color:var(--text-bright);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+  .history-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.05em}
+  .history-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .history-risk{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:3px 8px;border:1px solid;color:var(--red);border-color:rgba(230,57,70,.4)}
+  .history-item.medium .history-risk{color:var(--amber);border-color:rgba(244,160,38,.4)} .history-item.low .history-risk{color:var(--green);border-color:rgba(87,204,153,.4)}
+  .btn-delete{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:2px 6px;transition:color .2s;line-height:1}
+  .btn-delete:hover{color:var(--red)}
+  .history-body{display:none;padding:0 20px 20px;border-top:1px solid var(--border)}
+  .history-item.open .history-body{display:block}
+  .history-verdict{font-size:13px;line-height:1.7;color:var(--muted);margin-top:12px;margin-bottom:12px}
+  .btn-view-full{background:var(--teal);color:var(--bg);border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:opacity .2s}
+  .btn-view-full:hover{opacity:.85}
+  .history-loading{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);text-align:center;padding:32px 0}
 
-  /* SKELETON */
-  .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--border-bright) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 2px; height: 14px; margin-bottom: 10px; }
-  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border-bright); }
-
-  @media(max-width:600px) { .container { padding: 40px 16px 80px; } .btn-analyze { width: 100%; } }
+  ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-track{background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--border-bright)}
+  @media(max-width:600px){.container,.history-panel-inner{padding:40px 16px 80px}.btn-analyze{width:100%}}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <header>
-    <div class="eyebrow">Single Agent Architecture</div>
-    <h1>BLIND<br/>SPOT<br/><span>DETECTOR</span></h1>
-    <p class="subtitle">Submit your idea, plan, or decision. Four expert lenses will systematically dismantle it and surface every hidden flaw you missed.</p>
-  </header>
+<!-- AUTH WALL -->
+<div id="auth-wall">
+  <div>
+    <div class="auth-title">BLIND<br/>SPOT<br/><span>DETECTOR</span></div>
+    <div class="auth-sub">Sign in to continue</div>
+  </div>
+  <div id="clerk-sign-in"></div>
+</div>
 
-  <div class="input-section">
-    <div class="input-label">Your Idea / Plan / Decision</div>
-    <textarea id="ideaInput" maxlength="5000"
-      placeholder="Describe your business idea, life decision, strategy, or plan in as much detail as possible...
+<!-- NAV -->
+<nav id="app-nav">
+  <div class="nav-brand">BLIND <span>SPOT</span></div>
+  <div class="nav-right">
+    <span class="nav-user" id="navUser"></span>
+    <span class="usage-badge" id="usageBadge">— / 10 today</span>
+    <button class="nav-btn" id="tabAnalyze" onclick="switchTab('analyze')">NEW ANALYSIS</button>
+    <button class="nav-btn" id="tabHistory" onclick="switchTab('history')">HISTORY</button>
+    <button class="nav-btn danger" onclick="signOut()">SIGN OUT</button>
+  </div>
+</nav>
 
-e.g. &quot;I want to quit my job and start a SaaS product for freelancers that helps them track client payments. I have 3 friends who said they'd pay for it. Plan to build it in 3 months while living off savings.&quot;"></textarea>
-    <div class="char-counter" id="charCounter">0 / 5000</div>
-    <div class="btn-row">
-      <span class="hint">// Ctrl + Enter to analyze</span>
-      <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">DETECT BLIND SPOTS</button>
+<!-- MAIN APP -->
+<div id="main-app">
+
+  <!-- ANALYZE TAB -->
+  <div class="tab-panel active" id="panel-analyze">
+    <div class="container">
+      <header>
+        <div class="eyebrow">Single Agent Architecture</div>
+        <h1>BLIND<br/>SPOT<br/><span>DETECTOR</span></h1>
+        <p class="subtitle">Submit your idea, plan, or decision. Four expert lenses will systematically dismantle it and surface every hidden flaw you missed.</p>
+      </header>
+
+      <div class="input-section" style="margin-bottom:32px">
+        <div class="input-label">Your Idea / Plan / Decision</div>
+        <textarea id="ideaInput" maxlength="5000"
+          placeholder="Describe your business idea, life decision, strategy, or plan...&#10;&#10;e.g. &quot;I want to quit my job and start a SaaS for freelancers. I have 3 friends who said they'd pay. Plan to build in 3 months off savings.&quot;"></textarea>
+        <div class="char-counter" id="charCounter">0 / 5000</div>
+        <div class="btn-row">
+          <span class="hint">// Ctrl + Enter to analyze</span>
+          <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">DETECT BLIND SPOTS</button>
+        </div>
+      </div>
+
+      <div id="loadingStatus">
+        <div class="loading-title">// Analysis in progress</div>
+        <div class="loading-steps">
+          <div class="loading-step" id="step-0"><div class="step-dot"></div>💰 Skeptical Investor analyzing financials...</div>
+          <div class="loading-step" id="step-1"><div class="step-dot"></div>👿 Devil's Advocate attacking assumptions...</div>
+          <div class="loading-step" id="step-2"><div class="step-dot"></div>🧠 Psychologist detecting cognitive biases...</div>
+          <div class="loading-step" id="step-3"><div class="step-dot"></div>⚖️ Lawyer reviewing legal exposure...</div>
+          <div class="loading-step" id="step-4"><div class="step-dot"></div>📋 Saving to your history...</div>
+        </div>
+      </div>
+
+      <div class="error-box" id="errorBox"></div>
+      <div id="results"></div>
     </div>
   </div>
 
-  <!-- LOADING STATUS -->
-  <div id="loadingStatus">
-    <div class="loading-title">// Analysis in progress</div>
-    <div class="loading-steps">
-      <div class="loading-step" id="step-0"><div class="step-dot"></div>💰 Skeptical Investor analyzing financials...</div>
-      <div class="loading-step" id="step-1"><div class="step-dot"></div>👿 Devil's Advocate attacking assumptions...</div>
-      <div class="loading-step" id="step-2"><div class="step-dot"></div>🧠 Psychologist detecting cognitive biases...</div>
-      <div class="loading-step" id="step-3"><div class="step-dot"></div>⚖️ Lawyer reviewing legal exposure...</div>
-      <div class="loading-step" id="step-4"><div class="step-dot"></div>📋 Compiling case file...</div>
+  <!-- HISTORY TAB -->
+  <div class="tab-panel" id="panel-history">
+    <div id="history-panel">
+      <div class="history-header">
+        <div class="history-title">YOUR HISTORY</div>
+      </div>
+      <div id="historyList"><div class="history-loading">// Loading your past analyses...</div></div>
     </div>
   </div>
-
-  <div class="error-box" id="errorBox"></div>
-  <div id="results"></div>
 
 </div>
+
 <script>
 const LENSES = [
-  { id: 'investor',        icon: '💰', name: 'Skeptical Investor',   role: 'Market & Financial Viability' },
-  { id: 'devils_advocate', icon: '👿', name: "Devil's Advocate",      role: 'Logic & Assumptions' },
-  { id: 'psychologist',    icon: '🧠', name: 'Forensic Psychologist', role: 'Cognitive Biases & Emotional Blindspots' },
-  { id: 'lawyer',          icon: '⚖️', name: 'Corporate Lawyer',      role: 'Risk, Liability & Edge Cases' }
+  {id:'investor',        icon:'💰',name:'Skeptical Investor',  role:'Market & Financial Viability'},
+  {id:'devils_advocate', icon:'👿',name:"Devil's Advocate",     role:'Logic & Assumptions'},
+  {id:'psychologist',    icon:'🧠',name:'Forensic Psychologist',role:'Cognitive Biases & Emotional Blindspots'},
+  {id:'lawyer',          icon:'⚖️',name:'Corporate Lawyer',     role:'Risk, Liability & Edge Cases'}
 ];
 
-// Character counter
+// ── CLERK AUTH ───────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  await window.Clerk.load();
+  if (window.Clerk.user) {
+    showApp(window.Clerk.user);
+  } else {
+    window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
+      afterSignInUrl: window.location.href,
+      afterSignUpUrl: window.location.href,
+    });
+    window.Clerk.addListener(({ user }) => { if (user) showApp(user); });
+  }
+});
+
+function showApp(user) {
+  document.getElementById('auth-wall').style.display = 'none';
+  document.getElementById('app-nav').classList.add('visible');
+  document.getElementById('main-app').classList.add('visible');
+  document.getElementById('navUser').textContent = user.primaryEmailAddress?.emailAddress || user.username || '';
+  switchTab('analyze');
+}
+
+async function signOut() {
+  await window.Clerk.signOut();
+  window.location.reload();
+}
+
+async function getToken() {
+  const token = await window.Clerk.session.getToken();
+  if (!token) throw new Error('Not authenticated. Please sign in again.');
+  return token;
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.getElementById('tabAnalyze').classList.toggle('active', tab === 'analyze');
+  document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+  if (tab === 'history') loadHistory();
+}
+
+// ── CHAR COUNTER ─────────────────────────────────────────────────────────────
 document.getElementById('ideaInput').addEventListener('input', function() {
   const len = this.value.length;
   const c = document.getElementById('charCounter');
@@ -303,19 +314,16 @@ document.getElementById('ideaInput').addEventListener('input', function() {
   c.className = 'char-counter' + (len > 4500 ? ' over' : len > 3500 ? ' warn' : '');
 });
 
-// Ctrl+Enter
 document.getElementById('ideaInput').addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runAnalysis();
 });
 
-// Animated loading steps
+// ── LOADING STEPS ─────────────────────────────────────────────────────────────
 let stepInterval = null;
 function startLoadingSteps() {
   document.getElementById('loadingStatus').classList.add('active');
   let current = 0;
-  // Activate first step immediately
-  document.getElementById(`step-0`).classList.add('active');
-
+  document.getElementById('step-0').classList.add('active');
   stepInterval = setInterval(() => {
     if (current < 4) {
       document.getElementById(`step-${current}`).classList.remove('active');
@@ -325,17 +333,16 @@ function startLoadingSteps() {
     }
   }, 2200);
 }
-
 function stopLoadingSteps() {
   clearInterval(stepInterval);
   document.getElementById('loadingStatus').classList.remove('active');
-  // Reset steps
   for (let i = 0; i < 5; i++) {
     const s = document.getElementById(`step-${i}`);
     s.classList.remove('active', 'done');
   }
 }
 
+// ── ANALYSIS ──────────────────────────────────────────────────────────────────
 async function runAnalysis() {
   const idea = document.getElementById('ideaInput').value.trim();
   const btn  = document.getElementById('analyzeBtn');
@@ -347,21 +354,24 @@ async function runAnalysis() {
   btn.disabled = true;
   btn.textContent = 'ANALYZING...';
   document.getElementById('results').innerHTML = '';
-
   startLoadingSteps();
 
   try {
+    const token = await getToken();
     const res = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ idea })
     });
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
     stopLoadingSteps();
-    renderResults(data);
 
+    // Update usage badge
+    if (data._usageToday !== undefined) updateUsageBadge(data._usageToday, data._limitPerDay);
+
+    renderResults(data);
   } catch (err) {
     stopLoadingSteps();
     document.getElementById('results').innerHTML = '';
@@ -372,12 +382,19 @@ async function runAnalysis() {
   }
 }
 
+function updateUsageBadge(used, limit) {
+  const badge = document.getElementById('usageBadge');
+  badge.textContent = `${used} / ${limit} today`;
+  badge.className = 'usage-badge' + (used >= limit ? ' full' : used >= limit * 0.8 ? ' warn' : '');
+}
+
 function showError(msg) {
   const b = document.getElementById('errorBox');
   b.textContent = '// ERROR: ' + msg;
   b.style.display = 'block';
 }
 
+// ── RENDER RESULTS ────────────────────────────────────────────────────────────
 function renderResults(data) {
   const allSpots = LENSES.flatMap(l => data[l.id] || []);
   const counts = { high: 0, medium: 0, low: 0 };
@@ -392,46 +409,35 @@ function renderResults(data) {
         <button class="btn-copy" id="copyBtn" onclick="copyReport()">📋 COPY REPORT</button>
       </div>
     </div>
-
     <div class="risk-meter-section">
       <div class="stat-col">
         <div class="stats-row">
-          <div class="stat-item"><div class="stat-val">${allSpots.length}</div><div class="stat-label">Total Blind Spots</div></div>
+          <div class="stat-item"><div class="stat-val">${allSpots.length}</div><div class="stat-label">Total</div></div>
           <div class="stat-item"><div class="stat-val">${counts.high||0}</div><div class="stat-label">🔴 Critical</div></div>
           <div class="stat-item"><div class="stat-val amber">${counts.medium||0}</div><div class="stat-label">🟠 Moderate</div></div>
           <div class="stat-item"><div class="stat-val green">${counts.low||0}</div><div class="stat-label">🟢 Minor</div></div>
         </div>
-        ${data.fatal_flaws?.length ? `
-        <div class="fatal-flaws">
-          <div class="fatal-flaws-label">Fatal Flaws</div>
-          ${data.fatal_flaws.map(f => `<div class="fatal-flaw-item">→ ${esc(f)}</div>`).join('')}
-        </div>` : ''}
+        ${data.fatal_flaws?.length?`<div><div class="fatal-flaws-label">Fatal Flaws</div>${data.fatal_flaws.map(f=>`<div class="fatal-flaw-item">→ ${esc(f)}</div>`).join('')}</div>`:''}
       </div>
       <div class="meter-col">
         <div class="meter-label">Overall Risk Level</div>
         <div class="meter-text ${risk}">${risk.toUpperCase()}</div>
-        <div class="meter-bar-wrap">
-          <div class="meter-bar ${risk}" id="meterBar" style="width:0%"></div>
-        </div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:6px;">
-          ${risk === 'high' ? 'Significant risks detected. Address before proceeding.' :
-            risk === 'medium' ? 'Moderate risks. Fixable with the right approach.' :
-            'Low risk profile. Proceed with awareness.'}
-        </div>
+        <div class="meter-bar-wrap"><div class="meter-bar ${risk}" id="meterBar"></div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-top:6px">${risk==='high'?'Significant risks. Address before proceeding.':risk==='medium'?'Moderate risks. Fixable with the right approach.':'Low risk. Proceed with awareness.'}</div>
       </div>
     </div>`;
 
   LENSES.forEach((lens, idx) => {
     const spots = data[lens.id] || [];
-    const sClass = s => s === 'medium' ? 'severity-medium' : s === 'low' ? 'severity-low' : '';
-    const sLabel = s => s === 'high' ? '🔴 CRITICAL' : s === 'medium' ? '🟠 MODERATE' : '🟢 MINOR';
+    const sClass = s => s==='medium'?'severity-medium':s==='low'?'severity-low':'';
+    const sLabel = s => s==='high'?'🔴 CRITICAL':s==='medium'?'🟠 MODERATE':'🟢 MINOR';
     html += `
       <div class="lens-section" id="lens-${idx}">
         <div class="lens-header">
           <div class="lens-icon">${lens.icon}</div>
           <div><div class="lens-name">${lens.name}</div><div class="lens-role">${lens.role}</div></div>
         </div>
-        ${spots.map((spot, si) => `
+        ${spots.map((spot,si)=>`
           <div class="blind-spot ${sClass(spot.severity)}" id="sp-${idx}-${si}">
             <div class="blind-spot-header" onclick="tog('sp-${idx}-${si}')">
               <div class="severity-dot"></div>
@@ -451,27 +457,18 @@ function renderResults(data) {
 
   html += `
     <div class="verdict-section">
-      <div class="verdict-text">${esc(data.overall_verdict || '')}</div>
-      ${data._model ? `<div class="model-tag">// analyzed by ${data._model}</div>` : ''}
+      <div class="verdict-text">${esc(data.overall_verdict||'')}</div>
+      ${data._model?`<div class="model-tag">// analyzed by ${data._model}</div>`:''}
     </div>
     <button class="btn-reset" onclick="resetForm()">← ANALYZE ANOTHER IDEA</button>`;
 
   document.getElementById('results').innerHTML = html;
-
-  // Animate risk meter bar
   setTimeout(() => {
     const bar = document.getElementById('meterBar');
-    if (bar) bar.style.width = risk === 'high' ? '100%' : risk === 'medium' ? '60%' : '25%';
+    if (bar) bar.style.width = risk==='high'?'100%':risk==='medium'?'60%':'25%';
   }, 100);
-
-  // Stagger lens fade-in
-  LENSES.forEach((_, i) => {
-    setTimeout(() => document.getElementById(`lens-${i}`)?.classList.add('visible'), 100 + i * 150);
-  });
-
+  LENSES.forEach((_,i) => setTimeout(()=>document.getElementById(`lens-${i}`)?.classList.add('visible'), 100+i*150));
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // Store data for copy
   window._lastReport = data;
 }
 
@@ -479,34 +476,18 @@ function tog(id) { document.getElementById(id)?.classList.toggle('open'); }
 
 function copyReport() {
   if (!window._lastReport) return;
-  const report = buildTextReport(window._lastReport);
-  navigator.clipboard.writeText(report).then(() => {
+  const d = window._lastReport;
+  const lines = ['BLIND SPOT DETECTOR — REPORT','='.repeat(50),'',`RISK: ${(d.risk_level||'').toUpperCase()}`,`FATAL FLAWS: ${(d.fatal_flaws||[]).join(', ')||'None'}\n`];
+  LENSES.forEach(l => {
+    lines.push(`--- ${l.name.toUpperCase()} ---`);
+    (d[l.id]||[]).forEach((s,i) => { lines.push(`${i+1}. [${s.severity.toUpperCase()}] ${s.title}`,'   '+s.explanation,'   FIX: '+s.fix,''); });
+  });
+  lines.push('--- FINAL VERDICT ---', d.overall_verdict||'');
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
     const btn = document.getElementById('copyBtn');
-    btn.textContent = '✅ COPIED';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '📋 COPY REPORT'; btn.classList.remove('copied'); }, 2000);
-  }).catch(() => {
-    showError('Could not copy to clipboard. Try manually selecting the text.');
+    btn.textContent = '✅ COPIED'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='📋 COPY REPORT'; btn.classList.remove('copied'); }, 2000);
   });
-}
-
-function buildTextReport(data) {
-  const lines = ['BLIND SPOT DETECTOR — ANALYSIS REPORT', '='.repeat(50), ''];
-  lines.push(`OVERALL RISK: ${(data.risk_level || '').toUpperCase()}`);
-  lines.push(`FATAL FLAWS: ${(data.fatal_flaws || []).join(', ') || 'None identified'}`);
-  lines.push('');
-  LENSES.forEach(lens => {
-    lines.push(`--- ${lens.name.toUpperCase()} ---`);
-    (data[lens.id] || []).forEach((s, i) => {
-      lines.push(`${i+1}. [${s.severity.toUpperCase()}] ${s.title}`);
-      lines.push(`   ${s.explanation}`);
-      lines.push(`   FIX: ${s.fix}`);
-      lines.push('');
-    });
-  });
-  lines.push('--- FINAL VERDICT ---');
-  lines.push(data.overall_verdict || '');
-  return lines.join('\n');
 }
 
 function resetForm() {
@@ -518,8 +499,91 @@ function resetForm() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<div class="history-loading">// Fetching your analyses...</div>';
+
+  try {
+    const token = await getToken();
+    const res = await fetch('/api/history', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Update usage badge from history endpoint too
+    if (data.usageToday !== undefined) updateUsageBadge(data.usageToday, data.limitPerDay);
+
+    if (!data.analyses?.length) {
+      list.innerHTML = '<div class="history-empty">// No analyses yet — run your first one!</div>';
+      return;
+    }
+
+    list.innerHTML = data.analyses.map(a => {
+      const riskClass = a.riskLevel || 'medium';
+      const date = a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Unknown date';
+      return `
+        <div class="history-item ${riskClass}" id="hi-${a.id}">
+          <div class="history-item-header" onclick="togHistory('${a.id}')">
+            <div class="history-item-meta">
+              <div class="history-idea">${esc(a.idea)}</div>
+              <div class="history-date">${date}</div>
+            </div>
+            <div class="history-actions">
+              <div class="history-risk">${(a.riskLevel||'?').toUpperCase()}</div>
+              <button class="btn-delete" title="Delete" onclick="deleteAnalysis(event,'${a.id}')">✕</button>
+            </div>
+          </div>
+          <div class="history-body">
+            <div class="history-verdict">${esc(a.overallVerdict||'')}</div>
+            ${a.fatalFlaws?.length?`<div style="margin-bottom:12px">${a.fatalFlaws.map(f=>`<div class="fatal-flaw-item">→ ${esc(f)}</div>`).join('')}</div>`:''}
+            <button class="btn-view-full" onclick="viewFullReport('${a.id}')">VIEW FULL REPORT →</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Cache full results for view
+    window._historyCache = {};
+    data.analyses.forEach(a => { window._historyCache[a.id] = a.fullResult; });
+
+  } catch (err) {
+    list.innerHTML = `<div class="history-empty">// Error: ${esc(err.message)}</div>`;
+  }
+}
+
+function togHistory(id) {
+  document.getElementById(`hi-${id}`)?.classList.toggle('open');
+}
+
+async function deleteAnalysis(e, id) {
+  e.stopPropagation();
+  if (!confirm('Delete this analysis?')) return;
+
+  try {
+    const token = await getToken();
+    await fetch(`/api/history?id=${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    document.getElementById(`hi-${id}`)?.remove();
+  } catch (err) {
+    alert('Failed to delete: ' + err.message);
+  }
+}
+
+function viewFullReport(id) {
+  const data = window._historyCache?.[id];
+  if (!data) return;
+  switchTab('analyze');
+  document.getElementById('ideaInput').value = '';
+  document.getElementById('charCounter').textContent = '0 / 5000';
+  document.getElementById('errorBox').style.display = 'none';
+  renderResults(data);
+}
+
 function esc(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 </script>
 </body>
