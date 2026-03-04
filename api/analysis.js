@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${API_KEY}`,
-        'HTTP-Referer': 'https://blind-spot-detector.vercel.app',  // your Vercel URL
+        'HTTP-Referer': 'https://assumption-hk6th8nfi-lakshmisagar918-4253s-projects.vercel.app/',  // your Vercel URL
         'X-Title': 'Blind Spot Detector'
       },
       body: JSON.stringify({
