@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { UserButton, useUser, useAuth } from "@clerk/nextjs";
+import Link from "next/link";
 
 type BlindSpot = { title: string; severity: string; explanation: string; fix: string };
 type AnalysisResult = {
@@ -47,7 +48,22 @@ function App() {
   const [result, setResult]         = useState<AnalysisResult | null>(null);
   const [openSpots, setOpenSpots]   = useState<Set<string>>(new Set());
   const [copied, setCopied]         = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Fetch today's usage count
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/history?userId=${encodeURIComponent(user.id)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const today = new Date().toDateString();
+          const todayCount = data.filter(a => new Date(a.created_at).toDateString() === today).length;
+          setUsageCount(todayCount);
+        }
+      }).catch(() => {});
+  }, [user]);
 
   function startSteps() {
     setActiveStep(0); let cur = 0;
@@ -62,12 +78,12 @@ function App() {
       const token = await getToken();
       const res = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "x-user-id": user?.id || "", "x-user-email": user?.primaryEmailAddress?.emailAddress || "" },
         body: JSON.stringify({ idea }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
-      stopSteps(); setResult(data as AnalysisResult);
+      stopSteps(); setResult(data as AnalysisResult); setUsageCount(c => c + 1);
     } catch (err: unknown) {
       stopSteps(); setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally { setLoading(false); }
@@ -104,7 +120,8 @@ function App() {
       <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(10,10,10,0.95)", backdropFilter: "blur(8px)", borderBottom: `1px solid ${C.bright}`, padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: "0.1em", color: C.textBright }}>BLIND <span style={{ color: C.red }}>SPOT</span></div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: C.muted }}>{user?.primaryEmailAddress?.emailAddress ?? ""}</span>
+          <Link href="/history" style={{ textDecoration: "none", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.12em", color: C.muted, textTransform: "uppercase", border: `1px solid ${C.bright}`, padding: "6px 12px" }}>History</Link>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: usageCount >= 10 ? C.red : C.dim, letterSpacing: "0.1em" }}>{usageCount}/10</div>
           <UserButton />
         </div>
       </nav>
