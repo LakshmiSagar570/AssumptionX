@@ -59,10 +59,10 @@ function App() {
       .then(data => {
         if (Array.isArray(data)) {
           const today = new Date().toDateString();
-          const todayCount = data.filter(a => new Date(a.created_at).toDateString() === today).length;
+          const todayCount = data.filter((a: {created_at: string}) => new Date(a.created_at).toDateString() === today).length;
           setUsageCount(todayCount);
         }
-      }).catch(() => {});
+      }).catch(() => {}); // Silently fail if Supabase not configured
   }, [user]);
 
   function startSteps() {

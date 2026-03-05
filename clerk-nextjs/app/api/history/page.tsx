@@ -30,8 +30,16 @@ export default function HistoryPage() {
     if (!isLoaded || !user) return;
     fetch(`/api/history?userId=${encodeURIComponent(user.id)}`)
       .then(r => r.json())
-      .then(data => { setAnalyses(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAnalyses(data);
+        } else {
+          console.error("History API returned:", data);
+          setAnalyses([]);
+        }
+        setLoading(false);
+      })
+      .catch((e) => { console.error("History fetch error:", e); setLoading(false); });
   }, [isLoaded, user]);
 
   if (!isLoaded || !user) return null;
