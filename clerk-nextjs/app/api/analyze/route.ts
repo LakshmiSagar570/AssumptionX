@@ -30,12 +30,79 @@ const MODELS = [
   "mistralai/mistral-7b-instruct:free",
 ];
 
+const DAILY_LIMIT = 10;
+
+// ── Supabase helpers (no SDK needed — just fetch) ─────────────────────────────
+function supabaseHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "apikey": process.env.SUPABASE_ANON_KEY!,
+    "Authorization": `Bearer ${process.env.SUPABASE_ANON_KEY!}`,
+  };
+}
+
+async function getDailyCount(userId: string): Promise<number> {
+  const url = process.env.SUPABASE_URL!;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const res = await fetch(
+    `${url}/rest/v1/analyses?user_id=eq.${encodeURIComponent(userId)}&created_at=gte.${today.toISOString()}&select=id`,
+    { headers: supabaseHeaders() }
+  );
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return Array.isArray(data) ? data.length : 0;
+}
+
+async function saveAnalysis(userId: string, userEmail: string, idea: string, result: Record<string, unknown>) {
+  const url = process.env.SUPABASE_URL!;
+  await fetch(`${url}/rest/v1/analyses`, {
+    method: "POST",
+    headers: { ...supabaseHeaders(), "Prefer": "return=minimal" },
+    body: JSON.stringify({
+      user_id: userId,
+      user_email: userEmail,
+      idea: idea.slice(0, 500), // store first 500 chars of idea
+      result,
+      risk_level: result.risk_level,
+    }),
+  });
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
 export async function POST(req: Request) {
+  // Auth
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader?.startsWith("Bearer ")) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Get user info from Clerk token
+  const userId = req.headers.get("x-user-id");
+  const userEmail = req.headers.get("x-user-email") || "";
+
+  if (!userId) {
+    return Response.json({ error: "User ID missing" }, { status: 401 });
+  }
+
+  // Check daily limit
+  try {
+    const count = await getDailyCount(userId);
+    if (count >= DAILY_LIMIT) {
+      return Response.json({
+        error: `Daily limit reached. You've used ${count}/${DAILY_LIMIT} analyses today. Resets at midnight.`,
+        limitReached: true,
+        used: count,
+        limit: DAILY_LIMIT,
+      }, { status: 429 });
+    }
+  } catch {
+    // If Supabase is down, allow the request through
+    console.error("Supabase check failed, allowing request");
+  }
+
+  // Parse body
   let body: { idea?: string };
   try { body = await req.json(); }
   catch { return Response.json({ error: "Invalid JSON body" }, { status: 400 }); }
@@ -100,13 +167,17 @@ export async function POST(req: Request) {
 
       let parsed: Record<string, unknown>;
       try { parsed = JSON.parse(jsonStr); }
-      catch (e: unknown) { lastError = `${model}: parse failed`; continue; }
+      catch { lastError = `${model}: parse failed`; continue; }
 
       const required = ["investor", "devils_advocate", "psychologist", "lawyer", "overall_verdict", "risk_level"];
       const missing = required.filter((k) => !(k in parsed));
       if (missing.length) { lastError = `${model}: missing — ${missing.join(", ")}`; continue; }
 
       parsed._model = model;
+
+      // Save to Supabase (non-blocking)
+      saveAnalysis(userId, userEmail, idea, parsed).catch(console.error);
+
       return Response.json(parsed);
 
     } catch (err: unknown) {
