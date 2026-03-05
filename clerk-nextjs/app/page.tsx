@@ -59,10 +59,10 @@ function App() {
       .then(data => {
         if (Array.isArray(data)) {
           const today = new Date().toDateString();
-          const todayCount = data.filter((a: {created_at: string}) => new Date(a.created_at).toDateString() === today).length;
+          const todayCount = data.filter(a => new Date(a.created_at).toDateString() === today).length;
           setUsageCount(todayCount);
         }
-      }).catch(() => {}); // Silently fail if Supabase not configured
+      }).catch(() => {});
   }, [user]);
 
   function startSteps() {
@@ -245,7 +245,6 @@ function App() {
             <div style={{ border: `1px solid ${C.bright}`, padding: 28, marginTop: 40, position: "relative" }}>
               <div style={{ position: "absolute", top: -1, left: 28, background: C.bg, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.25em", color: C.muted, padding: "0 8px" }}>FINAL VERDICT</div>
               <div style={{ fontSize: 15, lineHeight: 1.8, color: C.text, marginTop: 8 }}>{result.overall_verdict}</div>
-              {result._model && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: C.dim, marginTop: 16 }}>// analyzed by {result._model}</div>}
             </div>
 
             <button onClick={() => { setResult(null); setIdea(""); window.scrollTo({ top: 0, behavior: "smooth" }); }}

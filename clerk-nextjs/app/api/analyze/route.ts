@@ -1,26 +1,32 @@
-const SYSTEM_PROMPT = `You are a Blind Spot Detector — a ruthless expert analysis engine.
+const SYSTEM_PROMPT = `You are a Blind Spot Detector — a critical thinking expert who analyzes ideas objectively.
 
-Analyze the user's idea from FOUR perspectives and return ONLY a raw JSON object.
-No markdown. No explanation. No code fences. Just the JSON, starting with { and ending with }.
+Analyze the user's idea from FOUR perspectives. Your risk assessment MUST be calibrated:
+- "high" risk: idea has fundamental flaws that would likely cause failure (illegal, no market, zero capital, completely unrealistic)
+- "medium" risk: idea has real challenges but is viable with the right approach (most solid business ideas fall here)
+- "low" risk: idea is well-thought-out with manageable risks (rare, only for very solid plans)
+
+DO NOT default everything to "high". Be fair and accurate. A person quitting their job with savings to freelance is "medium", not "high". Buying crypto with borrowed money is "high".
+
+Return ONLY a raw JSON object. No markdown. No explanation. No code fences. Just JSON starting with { and ending with }.
 
 For each perspective, identify 3-5 blind spots. Each needs:
 - "title": short punchy name (max 8 words)
-- "severity": exactly "high", "medium", or "low"
+- "severity": exactly "high", "medium", or "low" — calibrate fairly
 - "explanation": 2-3 sentences on the flaw
-- "fix": 1-2 sentences on how to address it
+- "fix": 1-2 actionable sentences on how to address it
 
 Perspectives:
-1. "investor": financial flaws, market myths, CAC/LTV, scalability
-2. "devils_advocate": logical leaps, false assumptions, circular reasoning
-3. "psychologist": cognitive biases (name each), overconfidence, wishful thinking
-4. "lawyer": legal risks, liability, regulatory issues, worst-case scenarios
+1. "investor": financial flaws, market size myths, CAC/LTV, revenue model, scalability
+2. "devils_advocate": logical leaps, false assumptions, circular reasoning, ignored competition
+3. "psychologist": cognitive biases (name each specifically), overconfidence, wishful thinking, sunk cost
+4. "lawyer": legal risks, regulatory issues, liability, worst-case legal scenarios
 
-Also:
-- "overall_verdict": 2-3 sentence summary
-- "risk_level": exactly "high", "medium", or "low"
-- "fatal_flaws": array of up to 3 short strings
+Also return:
+- "overall_verdict": 3-4 balanced sentences — acknowledge strengths AND weaknesses
+- "risk_level": exactly "high", "medium", or "low" — overall calibrated rating
+- "fatal_flaws": array of 1-3 short strings, only for genuinely fatal issues. Empty array [] if none.
 
-Return ONLY this JSON shape and nothing else:
+Return ONLY this exact JSON shape:
 {"investor":[{"title":"","severity":"","explanation":"","fix":""}],"devils_advocate":[{"title":"","severity":"","explanation":"","fix":""}],"psychologist":[{"title":"","severity":"","explanation":"","fix":""}],"lawyer":[{"title":"","severity":"","explanation":"","fix":""}],"overall_verdict":"","risk_level":"","fatal_flaws":[]}`;
 
 const MODELS = [
@@ -28,11 +34,11 @@ const MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
   "meta-llama/llama-3.1-8b-instruct:free",
   "mistralai/mistral-7b-instruct:free",
+  "google/gemma-3-4b-it:free",
 ];
 
 const DAILY_LIMIT = 10;
 
-// ── Supabase helpers (no SDK needed — just fetch) ─────────────────────────────
 function supabaseHeaders() {
   return {
     "Content-Type": "application/json",
@@ -42,149 +48,166 @@ function supabaseHeaders() {
 }
 
 async function getDailyCount(userId: string): Promise<number> {
-  const url = process.env.SUPABASE_URL!;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  try {
+    const url = process.env.SUPABASE_URL;
+    if (!url || !process.env.SUPABASE_ANON_KEY) return 0;
 
-  const res = await fetch(
-    `${url}/rest/v1/analyses?user_id=eq.${encodeURIComponent(userId)}&created_at=gte.${today.toISOString()}&select=id`,
-    { headers: supabaseHeaders() }
-  );
-  if (!res.ok) return 0;
-  const data = await res.json();
-  return Array.isArray(data) ? data.length : 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const res = await fetch(
+      `${url}/rest/v1/analyses?user_id=eq.${encodeURIComponent(userId)}&created_at=gte.${today.toISOString()}&select=id`,
+      { headers: supabaseHeaders() }
+    );
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return Array.isArray(data) ? data.length : 0;
+  } catch {
+    return 0; // If Supabase is down, don't block users
+  }
 }
 
 async function saveAnalysis(userId: string, userEmail: string, idea: string, result: Record<string, unknown>) {
-  const url = process.env.SUPABASE_URL!;
-  await fetch(`${url}/rest/v1/analyses`, {
-    method: "POST",
-    headers: { ...supabaseHeaders(), "Prefer": "return=minimal" },
-    body: JSON.stringify({
-      user_id: userId,
-      user_email: userEmail,
-      idea: idea.slice(0, 500), // store first 500 chars of idea
-      result,
-      risk_level: result.risk_level,
-    }),
-  });
+  try {
+    const url = process.env.SUPABASE_URL;
+    if (!url || !process.env.SUPABASE_ANON_KEY) return;
+
+    await fetch(`${url}/rest/v1/analyses`, {
+      method: "POST",
+      headers: { ...supabaseHeaders(), "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        user_id: userId,
+        user_email: userEmail,
+        idea: idea.slice(0, 500),
+        result,
+        risk_level: result.risk_level,
+      }),
+    });
+  } catch {
+    // Non-blocking — don't fail the request if save fails
+  }
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
+async function tryModel(model: string, idea: string, apiKey: string): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://assumption-x.vercel.app",
+        "X-Title": "Blind Spot Detector",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: `Analyze this idea for blind spots. Be balanced in your risk assessment. Return ONLY JSON:\n\n${idea.trim()}` },
+        ],
+        max_tokens: 3000,
+        temperature: 0.6,
+      }),
+    });
+
+    const rawText = await res.text();
+    if (!rawText?.trim()) return null;
+
+    let envelope: Record<string, unknown>;
+    try { envelope = JSON.parse(rawText); } catch { return null; }
+
+    if (envelope.error) return null;
+
+    const choices = envelope.choices as Array<Record<string, unknown>>;
+    const message = choices?.[0]?.message as Record<string, unknown>;
+    const content = (message?.content as string) || "";
+    if (!content.trim()) return null;
+
+    let jsonStr = content.trim()
+      .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+
+    const start = jsonStr.indexOf("{");
+    const end = jsonStr.lastIndexOf("}");
+    if (start === -1 || end === -1) return null;
+    jsonStr = jsonStr.slice(start, end + 1);
+
+    let parsed: Record<string, unknown>;
+    try { parsed = JSON.parse(jsonStr); } catch { return null; }
+
+    const required = ["investor", "devils_advocate", "psychologist", "lawyer", "overall_verdict", "risk_level"];
+    if (required.some(k => !(k in parsed))) return null;
+
+    // Validate risk_level is one of the allowed values
+    if (!["high", "medium", "low"].includes(parsed.risk_level as string)) {
+      parsed.risk_level = "medium";
+    }
+
+    // Ensure fatal_flaws is always an array
+    if (!Array.isArray(parsed.fatal_flaws)) {
+      parsed.fatal_flaws = [];
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
-  // Auth
+  // Auth check
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get user info from Clerk token
-  const userId = req.headers.get("x-user-id");
+  const userId = req.headers.get("x-user-id") || "";
   const userEmail = req.headers.get("x-user-email") || "";
 
   if (!userId) {
-    return Response.json({ error: "User ID missing" }, { status: 401 });
-  }
-
-  // Check daily limit
-  try {
-    const count = await getDailyCount(userId);
-    if (count >= DAILY_LIMIT) {
-      return Response.json({
-        error: `Daily limit reached. You've used ${count}/${DAILY_LIMIT} analyses today. Resets at midnight.`,
-        limitReached: true,
-        used: count,
-        limit: DAILY_LIMIT,
-      }, { status: 429 });
-    }
-  } catch {
-    // If Supabase is down, allow the request through
-    console.error("Supabase check failed, allowing request");
+    return Response.json({ error: "User ID missing from request." }, { status: 401 });
   }
 
   // Parse body
   let body: { idea?: string };
   try { body = await req.json(); }
-  catch { return Response.json({ error: "Invalid JSON body" }, { status: 400 }); }
+  catch { return Response.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
   const idea = body.idea;
-  if (!idea || typeof idea !== "string" || idea.trim().length < 20)
-    return Response.json({ error: "Please provide a more detailed idea." }, { status: 400 });
-  if (idea.length > 5000)
+  if (!idea || typeof idea !== "string" || idea.trim().length < 20) {
+    return Response.json({ error: "Please describe your idea in at least a sentence or two." }, { status: 400 });
+  }
+  if (idea.length > 5000) {
     return Response.json({ error: "Input too long. Keep it under 5000 characters." }, { status: 400 });
+  }
+
+  // Daily limit check
+  const usedToday = await getDailyCount(userId);
+  if (usedToday >= DAILY_LIMIT) {
+    return Response.json({
+      error: `Daily limit reached. You've used ${usedToday}/${DAILY_LIMIT} analyses today. Come back tomorrow.`,
+      limitReached: true,
+      used: usedToday,
+      limit: DAILY_LIMIT,
+    }, { status: 429 });
+  }
 
   const API_KEY = process.env.OPENROUTER_API_KEY;
-  if (!API_KEY)
-    return Response.json({ error: "OPENROUTER_API_KEY not set." }, { status: 500 });
+  if (!API_KEY) {
+    return Response.json({ error: "Server configuration error." }, { status: 500 });
+  }
 
-  let lastError = "";
-
+  // Try each model in sequence
   for (const model of MODELS) {
-    try {
-      const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
-          "HTTP-Referer": "https://assumption-x.vercel.app",
-          "X-Title": "Blind Spot Detector",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: `Analyze this for blind spots. Return ONLY JSON:\n\n${idea.trim()}` },
-          ],
-          max_tokens: 3000,
-          temperature: 0.7,
-        }),
-      });
-
-      const rawText = await orRes.text();
-      if (!rawText?.trim()) { lastError = `${model}: empty response`; continue; }
-
-      let envelope: Record<string, unknown>;
-      try { envelope = JSON.parse(rawText); }
-      catch { lastError = `${model}: non-JSON envelope`; continue; }
-
-      if (envelope.error) {
-        const err = envelope.error as Record<string, unknown>;
-        lastError = `${model}: ${err.message}`; continue;
-      }
-
-      const choices = envelope.choices as Array<Record<string, unknown>>;
-      const message = choices?.[0]?.message as Record<string, unknown>;
-      const content = (message?.content as string) || "";
-      if (!content.trim()) { lastError = `${model}: empty content`; continue; }
-
-      let jsonStr = content.trim()
-        .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
-
-      const start = jsonStr.indexOf("{");
-      const end = jsonStr.lastIndexOf("}");
-      if (start === -1 || end === -1) { lastError = `${model}: no JSON found`; continue; }
-      jsonStr = jsonStr.slice(start, end + 1);
-
-      let parsed: Record<string, unknown>;
-      try { parsed = JSON.parse(jsonStr); }
-      catch { lastError = `${model}: parse failed`; continue; }
-
-      const required = ["investor", "devils_advocate", "psychologist", "lawyer", "overall_verdict", "risk_level"];
-      const missing = required.filter((k) => !(k in parsed));
-      if (missing.length) { lastError = `${model}: missing — ${missing.join(", ")}`; continue; }
-
-      parsed._model = model;
-
-      // Save to Supabase (non-blocking)
-      saveAnalysis(userId, userEmail, idea, parsed).catch(console.error);
-
-      return Response.json(parsed);
-
-    } catch (err: unknown) {
-      lastError = `${model}: ${err instanceof Error ? err.message : "unknown"}`;
-      continue;
+    const result = await tryModel(model, idea, API_KEY);
+    if (result) {
+      // Save to DB (non-blocking)
+      saveAnalysis(userId, userEmail, idea, result).catch(() => {});
+      // Remove internal model field before sending to client
+      delete result._model;
+      return Response.json(result);
     }
   }
 
-  return Response.json({ error: `All models failed. Last: ${lastError}` }, { status: 502 });
+  return Response.json({
+    error: "All AI models are currently busy. Please try again in 30 seconds.",
+  }, { status: 502 });
 }
